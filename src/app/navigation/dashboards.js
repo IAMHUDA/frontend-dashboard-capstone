@@ -20,7 +20,7 @@ export const dashboards = {
             path: path(ROOT_DASHBOARDS, '/home'),
             type: NAV_TYPE_ITEM,
             title: 'Home',
-            transKey: 'nav.dashboards.home',
+            transKey: 'Home',
             Icon: HomeIcon,
         },
         {
@@ -28,7 +28,15 @@ export const dashboards = {
             path: path(ROOT_DASHBOARDS, '/pasar'),
             type: NAV_TYPE_ITEM,
             title: 'Pasar',
-            transKey: 'nav.dashboards.pasar',
+            transKey: 'Pasar',
+            Icon: FaStore
+        },
+        {
+            id: 'dashboards.UMKM',
+            path: path(ROOT_DASHBOARDS, '/UMKM'),
+            type: NAV_TYPE_ITEM,
+            title: 'UMKM',
+            transKey: 'UMKM',
             Icon: FaStore
         }
 
