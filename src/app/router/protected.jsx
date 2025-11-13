@@ -43,6 +43,12 @@ const protectedRoutes = {
                 Component: (await import("app/pages/dashboards/pasar")).default,
               }),
             },
+            {
+              path: "UMKM",
+              lazy: async () => ({
+                Component: (await import("app/pages/dashboards/UMKM")).default,
+              }),
+            },
           ],
         },
       ],
