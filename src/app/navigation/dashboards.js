@@ -24,11 +24,11 @@ export const dashboards = {
             Icon: HomeIcon,
         },
         {
-            id: 'dashboards.pasar',
-            path: path(ROOT_DASHBOARDS, '/pasar'),
+            id: 'dashboards.survey',
+            path: path(ROOT_DASHBOARDS, '/survey'),
             type: NAV_TYPE_ITEM,
-            title: 'Pasar',
-            transKey: 'Pasar',
+            title: 'Survey',
+            transKey: 'survey',
             Icon: FaStore
         },
         {
@@ -38,7 +38,14 @@ export const dashboards = {
             title: 'UMKM',
             transKey: 'UMKM',
             Icon: FaStore
+        },
+        {
+            id: 'dashboards.pertanyaan',
+            path: path(ROOT_DASHBOARDS, '/pertanyaan'),
+            type: NAV_TYPE_ITEM,
+            title: 'Pertanyaan',
+            transKey: 'Pertanyaan',
+            Icon: FaStore
         }
-
     ]
 }

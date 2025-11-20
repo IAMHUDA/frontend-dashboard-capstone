@@ -35,18 +35,24 @@ const protectedRoutes = {
             },
             {
               index: true,
-              element: <Navigate to="/dashboards/pasar" />,
+              element: <Navigate to="/dashboards/survey" />,
             },
             {
-              path: "pasar",
+              path: "survey",
               lazy: async () => ({
-                Component: (await import("app/pages/dashboards/pasar")).default,
+                Component: (await import("app/pages/dashboards/survey")).default,
               }),
             },
             {
               path: "UMKM",
               lazy: async () => ({
                 Component: (await import("app/pages/dashboards/UMKM")).default,
+              }),
+            },
+            {
+              path: "pertanyaan",
+              lazy: async () => ({
+                Component: (await import("app/pages/dashboards/pertanyaan")).default,
               }),
             },
           ],
