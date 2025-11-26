@@ -11,7 +11,7 @@ import { Item } from "./Item";
 
 // ----------------------------------------------------------------------
 
-export function MenuJ({ nav, setActiveSegment, activeSegment }) {
+export function Menu({ nav, setActiveSegment, activeSegment }) {
   const { t } = useTranslation();
   const { isExpanded, open } = useSidebarContext();
 

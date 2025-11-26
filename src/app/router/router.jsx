@@ -17,7 +17,7 @@ const router = createBrowserRouter([
     Component: Root,
     hydrateFallbackElement: <SplashScreen />,
     ErrorBoundary: RootErrorBoundary,
-    children: [protectedRoutes, ghostRoutes, publicRoutes],
+    children: [ghostRoutes,protectedRoutes,  publicRoutes],
   },
 ]);
 

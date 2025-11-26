@@ -1,9 +1,6 @@
-import * as Yup from 'yup'
+import * as yup from "yup";
 
-export const schema = Yup.object().shape({
-    username: Yup.string()
-        .trim()
-        .required('Product Title Required'),
-    password: Yup.string().trim()
-        .required('Product Title Required'),
-})
+export const schema = yup.object().shape({
+  email: yup.string().email("Email tidak valid").required("Email wajib diisi"),
+  password: yup.string().required("Password wajib diisi"),
+});

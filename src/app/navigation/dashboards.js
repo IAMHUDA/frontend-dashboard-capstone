@@ -46,6 +46,14 @@ export const dashboards = {
             title: 'Pertanyaan',
             transKey: 'Pertanyaan',
             Icon: FaStore
-        }
+        },
+        {
+            id: 'dashboards.users',
+            path: path(ROOT_DASHBOARDS, '/users'),
+            type: NAV_TYPE_ITEM,
+            title: 'users',
+            transKey: 'Users',
+            Icon: FaStore
+        },
     ]
 }
