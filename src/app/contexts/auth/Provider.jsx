@@ -117,6 +117,10 @@ export function AuthProvider({ children }) {
       localStorage.setItem("authToken", token);
 
       dispatch({ type: "LOGIN_SUCCESS", payload: { user } });
+      
+      // Redirect ke dashboard home setelah login berhasil
+      // Gunakan window.location.href untuk full page reload yang akan reset React Query cache
+      window.location.href = "/dashboards/home";
     } catch (err) {
       console.error("❌ Login error:", err);
       dispatch({

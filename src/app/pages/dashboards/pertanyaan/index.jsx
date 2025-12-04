@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Swal from "sweetalert2";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
@@ -38,18 +38,22 @@ export default function Pertanyaan() {
       const res = await axios.get(api.surveys.list);
       return Array.isArray(res.data.data) ? res.data.data : [];
     },
-    onSuccess: (list) => {
-      // Logic untuk inisialisasi selectedSurveyId
-      if (list.length > 0) {
-        if (!selectedSurveyId || !list.some((s) => s.id === selectedSurveyId)) {
-          setSelectedSurveyId(list[0].id);
-        }
-      } else {
-        setSelectedSurveyId(null);
+    staleTime: 0, // Data langsung stale, akan refetch saat halaman dibuka
+    refetchOnMount: true, // Selalu refetch saat component mount
+  });
+
+  // Effect untuk set selectedSurveyId saat surveys berubah
+  useEffect(() => {
+    if (surveys.length > 0) {
+      if (!selectedSurveyId || !surveys.some((s) => s.id === selectedSurveyId)) {
+        setSelectedSurveyId(surveys[0].id);
       }
-    },
-    staleTime: 5 * 60 * 1000,
-  }); // 2. Fetch Questions
+    } else {
+      setSelectedSurveyId(null);
+    }
+  }, [surveys, selectedSurveyId]);
+
+  // 2. Fetch Questions
 
   const { data: questions = [], isLoading: questionsLoading } = useQuery({
     queryKey: [QUESTIONS_QUERY_KEY, selectedSurveyId], // Key bergantung pada selectedSurveyId
@@ -61,10 +65,12 @@ export default function Pertanyaan() {
         : [];
     },
     enabled: !!selectedSurveyId, // Hanya aktif jika selectedSurveyId ada
-    onSuccess: () => {
-      setCurrentPage(1); // Reset halaman ke 1 saat data baru datang
-    },
-  }); // ===============================
+  });
+
+  // Effect untuk reset halaman saat questions berubah
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [questions]); // ===============================
   // CRUD MUTATIONS (useMutation) 🔴
   // ===============================
   // 1. Mutasi Hapus Pertanyaan
@@ -881,8 +887,15 @@ export default function Pertanyaan() {
                       type="radio"
                       name="survey-selector"
                       checked={selectedSurveyId === s.id}
-                      onChange={() => setSelectedSurveyId(s.id)}
-                      className="form-radio h-4 w-4 text-yellow-500"
+                      onChange={() => {
+                        // Toggle: jika survey yang sama diklik lagi, unselect
+                        if (selectedSurveyId === s.id) {
+                          setSelectedSurveyId(null);
+                        } else {
+                          setSelectedSurveyId(s.id);
+                        }
+                      }}
+                      className="form-radio h-4 w-4 text-blue-500 cursor-pointer"
                     />{" "}
                   </td>{" "}
                 </tr>

@@ -10,11 +10,12 @@ import {
 
 import axios from "utils/axios";
 import api from "configs/api.config";
+import { useAuthContext } from "app/contexts/auth/context";
 
 // -----------------------------------------------------------
 // FORM MODAL
 // -----------------------------------------------------------
-const UserFormContent = ({ swalClose, onSubmit, initialData = {} }) => {
+const UserFormContent = ({ swalClose, onSubmit, initialData = {}, currentUserRole }) => {
     const [name, setName] = useState(initialData.name || "");
     const [email, setEmail] = useState(initialData.email || "");
     const [role, setRole] = useState(initialData.role || "warga");
@@ -66,8 +67,8 @@ const UserFormContent = ({ swalClose, onSubmit, initialData = {} }) => {
                         value={role}
                         onChange={(e) => setRole(e.target.value)}
                     >
-                        <option value="super_admin">Super Admin</option>
-                        <option value="admin">Admin</option>
+                        {currentUserRole !== "admin" && <option value="super_admin">Super Admin</option>}
+                        {currentUserRole !== "admin" && <option value="admin">Admin</option>}
                         <option value="warga">Warga</option>
                     </select>
                 </div>
@@ -81,6 +82,8 @@ const UserFormContent = ({ swalClose, onSubmit, initialData = {} }) => {
 };
 
 export default function UsersPage() {
+    const { user: currentUser } = useAuthContext();
+    const currentUserRole = currentUser?.role?.toLowerCase();
 
     const [users, setUsers] = useState([]);
     const [currentPage, setCurrentPage] = useState(1);
@@ -96,12 +99,17 @@ export default function UsersPage() {
         try {
             const res = await axios.get(api.users.list);
 
-            const mapped = res.data.map((u) => ({
+            let mapped = res.data.map((u) => ({
                 id: u.id,
                 name: u.nama,
                 email: u.email,
                 role: u.role.toLowerCase()
             }));
+
+            // Filter out super_admin if current user is admin
+            if (currentUserRole === "admin") {
+                mapped = mapped.filter(u => u.role !== "super_admin");
+            }
 
             setUsers(mapped);
         } catch (err) {
@@ -276,6 +284,7 @@ export default function UsersPage() {
                     <UserFormContent
                         swalClose={() => Swal.close()}
                         onSubmit={createUser}
+                        currentUserRole={currentUserRole}
                     />
                 );
             },
@@ -317,6 +326,7 @@ export default function UsersPage() {
                         swalClose={() => Swal.close()}
                         initialData={user}
                         onSubmit={(data) => updateUser(user.id, data)}
+                        currentUserRole={currentUserRole}
                     />
                 );
             },
@@ -393,19 +403,24 @@ export default function UsersPage() {
 
                                         <td className="px-4 py-3.5">
                                             <div className="flex justify-center gap-2">
-                                                <button
-                                                    onClick={() => showEditUserModal(user)}
-                                                    className="rounded-lg bg-yellow-100 p-2 text-yellow-600 hover:bg-yellow-200 dark:bg-yellow-900/30 dark:text-yellow-400 dark:hover:bg-yellow-900/50"
-                                                >
-                                                    <PencilSquareIcon className="w-5"/>
-                                                </button>
+                                                {/* Hide edit/delete if current user is admin and target is also admin */}
+                                                {!(currentUserRole === "admin" && user.role === "admin") && (
+                                                    <>
+                                                        <button
+                                                            onClick={() => showEditUserModal(user)}
+                                                            className="rounded-lg bg-yellow-100 p-2 text-yellow-600 hover:bg-yellow-200 dark:bg-yellow-900/30 dark:text-yellow-400 dark:hover:bg-yellow-900/50"
+                                                        >
+                                                            <PencilSquareIcon className="w-5"/>
+                                                        </button>
 
-                                                <button
-                                                    onClick={() => handleDelete(user.id)}
-                                                    className="rounded-lg bg-red-100 p-2 text-red-600 hover:bg-red-200 dark:bg-red-900/30 dark:text-red-400 dark:hover:bg-red-900/50"
-                                                >
-                                                    <TrashIcon className="w-5"/>
-                                                </button>
+                                                        <button
+                                                            onClick={() => handleDelete(user.id)}
+                                                            className="rounded-lg bg-red-100 p-2 text-red-600 hover:bg-red-200 dark:bg-red-900/30 dark:text-red-400 dark:hover:bg-red-900/50"
+                                                        >
+                                                            <TrashIcon className="w-5"/>
+                                                        </button>
+                                                    </>
+                                                )}
                                             </div>
                                         </td>
                                     </tr>

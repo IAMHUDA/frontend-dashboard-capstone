@@ -5,8 +5,12 @@ import { Navigate } from "react-router";
 import { AppLayout } from "app/layouts/AppLayout";
 import { DynamicLayout } from "app/layouts/DynamicLayout";
 import AuthGuard from "middleware/AuthGuard";
+import { createRoleGuard } from "middleware/RoleGuard";
 
 // ----------------------------------------------------------------------
+
+// Create role guards for different access levels
+const AdminOnlyGuard = createRoleGuard(['super_admin', 'admin']);
 
 const protectedRoutes = {
   id: "protected",
@@ -33,39 +37,60 @@ const protectedRoutes = {
                 Component: (await import("app/pages/dashboards/home")).default,
               }),
             },
+            // Survey - Only super_admin and admin
             {
-              index: true,
-              element: <Navigate to="/dashboards/survey" />,
+              Component: AdminOnlyGuard,
+              children: [
+                {
+                  path: "survey",
+                  lazy: async () => ({
+                    Component: (await import("app/pages/dashboards/survey")).default,
+                  }),
+                },
+              ],
             },
-            {
-              path: "survey",
-              lazy: async () => ({
-                Component: (await import("app/pages/dashboards/survey")).default,
-              }),
-            },
+            // UMKM - All roles
             {
               path: "UMKM",
               lazy: async () => ({
                 Component: (await import("app/pages/dashboards/UMKM")).default,
               }),
             },
+            // Pertanyaan - Only super_admin and admin
             {
-              path: "pertanyaan",
-              lazy: async () => ({
-                Component: (await import("app/pages/dashboards/pertanyaan")).default,
-              }),
+              Component: AdminOnlyGuard,
+              children: [
+                {
+                  path: "pertanyaan",
+                  lazy: async () => ({
+                    Component: (await import("app/pages/dashboards/pertanyaan")).default,
+                  }),
+                },
+              ],
             },
+            // Users - Only super_admin and admin
             {
-              path: "users",
-              lazy: async () => ({
-                Component: (await import("app/pages/dashboards/users")).default,
-              }),
+              Component: AdminOnlyGuard,
+              children: [
+                {
+                  path: "users",
+                  lazy: async () => ({
+                    Component: (await import("app/pages/dashboards/users")).default,
+                  }),
+                },
+              ],
             },
+            // Hasil Survey - Only super_admin and admin
             {
-              path: "hasil-survey",
-              lazy: async () => ({
-                Component: (await import("app/pages/dashboards/hasil-survey")).default,
-              }),
+              Component: AdminOnlyGuard,
+              children: [
+                {
+                  path: "hasil-survey",
+                  lazy: async () => ({
+                    Component: (await import("app/pages/dashboards/hasil-survey")).default,
+                  }),
+                },
+              ],
             },
           ],
         },

@@ -22,6 +22,7 @@ export const dashboards = {
             title: 'Home',
             transKey: 'Home',
             Icon: HomeIcon,
+            allowedRoles: ['super_admin', 'admin', 'warga'], // All roles can access
         },
         {
             id: 'dashboards.survey',
@@ -29,7 +30,8 @@ export const dashboards = {
             type: NAV_TYPE_ITEM,
             title: 'Survey',
             transKey: 'Survey',
-            Icon: FaStore
+            Icon: FaStore,
+            allowedRoles: ['super_admin', 'admin'], // Only super_admin and admin
         },
         {
             id: 'dashboards.UMKM',
@@ -37,7 +39,8 @@ export const dashboards = {
             type: NAV_TYPE_ITEM,
             title: 'UMKM',
             transKey: 'UMKM',
-            Icon: FaStore
+            Icon: FaStore,
+            allowedRoles: ['super_admin', 'admin', 'warga'], // All roles can access
         },
         {
             id: 'dashboards.pertanyaan',
@@ -45,7 +48,8 @@ export const dashboards = {
             type: NAV_TYPE_ITEM,
             title: 'Pertanyaan',
             transKey: 'Pertanyaan',
-            Icon: FaStore
+            Icon: FaStore,
+            allowedRoles: ['super_admin', 'admin'], // Only super_admin and admin
         },
         {
             id: 'dashboards.users',
@@ -53,7 +57,8 @@ export const dashboards = {
             type: NAV_TYPE_ITEM,
             title: 'users',
             transKey: 'Users',
-            Icon: FaStore
+            Icon: FaStore,
+            allowedRoles: ['super_admin', 'admin'], // Only super_admin and admin
         },
         {
             id: 'dashboards.hasil-survey',
@@ -61,7 +66,8 @@ export const dashboards = {
             type: NAV_TYPE_ITEM,
             title: 'Hasil Survey',
             transKey: 'Hasil Survey',
-            Icon: FaStore
+            Icon: FaStore,
+            allowedRoles: ['super_admin', 'admin'], // Only super_admin and admin
         },
     ]
 }
