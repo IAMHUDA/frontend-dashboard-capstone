@@ -8,6 +8,12 @@ const api = {
     profile: `${API_BASE_URL}/auth/profile`,
     adminArea: `${API_BASE_URL}/auth/admin-area`,
   },
+  users: {
+    list: `${API_BASE_URL}/users`,
+    create: `${API_BASE_URL}/auth/register`,
+    update: (id) => `${API_BASE_URL}/users/${id}`,
+    delete: (id) => `${API_BASE_URL}/users/${id}`,
+  },
 
   surveys: {
     list: `${API_BASE_URL}/surveys`,
@@ -36,7 +42,8 @@ const api = {
   },
 
   results: {
-    submit: `${API_BASE_URL}/results`,
+    submit: `${API_BASE_URL}/results`,                // POST submit jawaban
+    getBySurvey: (surveyId) => `${API_BASE_URL}/surveys/${surveyId}` // GET jawaban per survey
   },
 };
 

@@ -1,43 +1,62 @@
-import  { useState } from 'react';
-import { BarChart, Bar, PieChart, Pie, Cell, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
-import { TrendingUp, Users, Building2, MapPin } from 'lucide-react';
+import { useQuery } from '@tanstack/react-query';
+import { BarChart, Bar, Cell, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import { TrendingUp, Building2, MapPin } from 'lucide-react';
+import axios from 'utils/axios';
+import api from 'configs/api.config';
 
 export default function Dashboard() {
-  const [user] = useState({ nama: "Admin" });
   
-  // Data UMKM per Kategori
-  const dataKategori = [
-    { name: 'Kuliner', value: 145, color: '#FF6B6B' },
-    { name: 'Fashion', value: 98, color: '#4ECDC4' },
-    { name: 'Kerajinan', value: 112, color: '#FFE66D' },
-    { name: 'Jasa', value: 87, color: '#A8E6CF' },
-    { name: 'Teknologi', value: 54, color: '#95B8D1' },
-    { name: 'Lainnya', value: 76, color: '#FF8B94' }
-  ];
+  // Fetch UMKM data
+  const { data: umkmList = [] } = useQuery({
+    queryKey: ['umkm'],
+    queryFn: async () => {
+      try {
+        const res = await axios.get(api.umkm.list);
+        return Array.isArray(res.data) ? res.data : [];
+      } catch (err) {
+        console.error('Error fetching UMKM:', err);
+        return [];
+      }
+    },
+    staleTime: 5 * 60 * 1000,
+  });
 
-  // Data UMKM per Wilayah
-  const dataWilayah = [
-    { wilayah: 'Sleman', total: 156, color: '#667eea' },
-    { wilayah: 'Bantul', total: 142, color: '#764ba2' },
-    { wilayah: 'Kota Yogya', total: 189, color: '#f093fb' },
-    { wilayah: 'Kulon Progo', total: 98, color: '#4facfe' },
-    { wilayah: 'Gunung Kidul', total: 87, color: '#00f2fe' }
-  ];
+  // Fetch survey data
+  const { data: surveyList = [] } = useQuery({
+    queryKey: ['surveys'],
+    queryFn: async () => {
+      try {
+        const res = await axios.get(api.surveys.list);
+        return Array.isArray(res.data) ? res.data : [];
+      } catch (err) {
+        console.error('Error fetching surveys:', err);
+        return [];
+      }
+    },
+    staleTime: 5 * 60 * 1000,
+  });
 
-  // Data Survey Timeline
-  const dataSurvey = [
-    { bulan: 'Jan', terisi: 45, total: 100 },
-    { bulan: 'Feb', terisi: 78, total: 120 },
-    { bulan: 'Mar', terisi: 123, total: 150 },
-    { bulan: 'Apr', terisi: 167, total: 200 },
-    { bulan: 'Mei', terisi: 234, total: 280 },
-    { bulan: 'Jun', terisi: 312, total: 350 }
-  ];
+  // Process UMKM data by region (jangkauanPemasaran)
+  const wilayahCount = {};
+  umkmList.forEach(umkm => {
+    const wilayah = umkm.jangkauanPemasaran || 'Lainnya';
+    wilayahCount[wilayah] = (wilayahCount[wilayah] || 0) + 1;
+  });
 
-  const totalUMKM = dataKategori.reduce((sum, item) => sum + item.value, 0);
-  const totalSurveyTerisi = dataSurvey[dataSurvey.length - 1].terisi;
-  const totalSurveyTarget = dataSurvey[dataSurvey.length - 1].total;
-  const persentaseSurvey = ((totalSurveyTerisi / totalSurveyTarget) * 100).toFixed(1);
+  const colors = ['#667eea', '#764ba2', '#f093fb', '#4facfe', '#00f2fe', '#43e97b', '#fa709a'];
+  const dataWilayah = Object.entries(wilayahCount)
+    .map(([wilayah, total], index) => ({
+      wilayah,
+      total,
+      color: colors[index % colors.length]
+    }))
+    .sort((a, b) => b.total - a.total)
+    .slice(0, 7); // Top 7 wilayah
+
+  const totalUMKM = umkmList.length;
+  const totalSurvey = surveyList.length;
+  const totalSurveyTarget = 500; // Target estimasi
+  const persentaseSurvey = totalSurveyTarget > 0 ? ((totalSurvey / totalSurveyTarget) * 100).toFixed(1) : 0;
 
   return (
     <div className="w-full min-h-screen bg-white dark:bg-dark-900 text-gray-900 dark:text-gray-100">
@@ -46,13 +65,10 @@ export default function Dashboard() {
         {/* Header */}
         <div className="mb-8">
           <h1 className="text-4xl font-bold mb-2">Dashboard Admin</h1>
-          <p className="text-xl text-gray-600 dark:text-gray-400">
-            Selamat Datang, <span className="font-semibold">{user?.nama || "User"}</span>!
-          </p>
         </div>
 
         {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
           <div className="bg-gradient-to-br from-purple-50 to-purple-100 dark:from-purple-900/20 dark:to-purple-800/20 p-6 rounded-2xl border border-purple-200 dark:border-purple-700">
             <div className="flex items-center justify-between mb-2">
               <Building2 className="w-8 h-8 text-purple-600 dark:text-purple-400" />
@@ -60,15 +76,6 @@ export default function Dashboard() {
             </div>
             <h3 className="text-3xl font-bold text-gray-900 dark:text-white">{totalUMKM}</h3>
             <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">UMKM Terdaftar</p>
-          </div>
-
-          <div className="bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-900/20 dark:to-blue-800/20 p-6 rounded-2xl border border-blue-200 dark:border-blue-700">
-            <div className="flex items-center justify-between mb-2">
-              <Users className="w-8 h-8 text-blue-600 dark:text-blue-400" />
-              <span className="text-sm font-medium text-blue-600 dark:text-blue-400">Survey</span>
-            </div>
-            <h3 className="text-3xl font-bold text-gray-900 dark:text-white">{totalSurveyTerisi}</h3>
-            <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">Survey Terisi</p>
           </div>
 
           <div className="bg-gradient-to-br from-green-50 to-green-100 dark:from-green-900/20 dark:to-green-800/20 p-6 rounded-2xl border border-green-200 dark:border-green-700">
@@ -93,135 +100,72 @@ export default function Dashboard() {
         {/* Charts Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
           
-          {/* UMKM per Kategori - Pie Chart */}
-          <div className="bg-white dark:bg-dark-900 p-6 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700">
-            <h3 className="text-xl font-bold mb-6 text-gray-900 dark:text-white">UMKM per Kategori</h3>
-            <ResponsiveContainer width="100%" height={300}>
-              <PieChart>
-                <Pie
-                  data={dataKategori}
-                  cx="50%"
-                  cy="50%"
-                  labelLine={false}
-                  label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
-                  outerRadius={100}
-                  fill="#8884d8"
-                  dataKey="value"
-                >
-                  {dataKategori.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={entry.color} />
-                  ))}
-                </Pie>
-                <Tooltip 
-                  contentStyle={{ 
-                    backgroundColor: 'rgba(255, 255, 255, 0.95)',
-                    border: '1px solid #e5e7eb',
-                    borderRadius: '8px'
-                  }}
-                />
-              </PieChart>
-            </ResponsiveContainer>
-            <div className="grid grid-cols-2 gap-2 mt-4">
-              {dataKategori.map((item, index) => (
-                <div key={index} className="flex items-center gap-2">
-                  <div className="w-3 h-3 rounded-full" style={{ backgroundColor: item.color }}></div>
-                  <span className="text-sm text-gray-700 dark:text-gray-300">{item.name}: {item.value}</span>
-                </div>
-              ))}
-            </div>
+          {/* Daftar Nama UMKM */}
+          <div className="bg-white dark:bg-dark-800 p-6 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700">
+            <h3 className="text-xl font-bold mb-6 text-gray-900 dark:text-white">Daftar UMKM Terdaftar</h3>
+            {totalUMKM > 0 ? (
+              <div className="max-h-[400px] overflow-y-auto space-y-3 pr-2">
+                {umkmList.map((umkm, index) => (
+                  <div 
+                    key={umkm.id || index} 
+                    className="flex items-center justify-between p-3 bg-gray-50 dark:bg-dark-700 rounded-lg hover:bg-gray-100 dark:hover:bg-dark-600 transition-colors"
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="w-8 h-8 rounded-full bg-purple-500 flex items-center justify-center text-white font-semibold text-sm">
+                        {index + 1}
+                      </div>
+                      <div>
+                        <p className="font-medium text-gray-900 dark:text-white">{umkm.namaUsaha}</p>
+                        <p className="text-xs text-gray-500 dark:text-gray-400">{umkm.namaPemilik}</p>
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-xs text-gray-500 dark:text-gray-400">{umkm.jangkauanPemasaran}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="flex items-center justify-center h-[400px] text-gray-500 dark:text-gray-400">
+                Belum ada data UMKM
+              </div>
+            )}
           </div>
 
           {/* UMKM per Wilayah - Bar Chart */}
-          <div className="bg-white dark:bg-dark-900 p-6 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700">
+          <div className="bg-white dark:bg-dark-800 p-6 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700">
             <h3 className="text-xl font-bold mb-6 text-gray-900 dark:text-white">UMKM per Wilayah</h3>
-            <ResponsiveContainer width="100%" height={300}>
-              <BarChart data={dataWilayah}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
-                <XAxis 
-                  dataKey="wilayah" 
-                  tick={{ fill: '#6b7280' }}
-                  angle={-15}
-                  textAnchor="end"
-                  height={60}
-                />
-                <YAxis tick={{ fill: '#6b7280' }} />
-                <Tooltip 
-                  contentStyle={{ 
-                    backgroundColor: 'rgba(255, 255, 255, 0.95)',
-                    border: '1px solid #e5e7eb',
-                    borderRadius: '8px'
-                  }}
-                />
-                <Bar dataKey="total" radius={[8, 8, 0, 0]}>
-                  {dataWilayah.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={entry.color} />
-                  ))}
-                </Bar>
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
-        </div>
-
-        {/* Survey Progress Chart - Full Width */}
-        <div className="bg-white dark:bg-dark-900 p-6 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700">
-          <h3 className="text-xl font-bold mb-6 text-gray-900 dark:text-white">Progress Pengisian Survey</h3>
-          <ResponsiveContainer width="100%" height={350}>
-            <LineChart data={dataSurvey}>
-              <defs>
-                <linearGradient id="colorTerisi" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="#8b5cf6" stopOpacity={0.3}/>
-                  <stop offset="95%" stopColor="#8b5cf6" stopOpacity={0}/>
-                </linearGradient>
-                <linearGradient id="colorTotal" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="#06b6d4" stopOpacity={0.3}/>
-                  <stop offset="95%" stopColor="#06b6d4" stopOpacity={0}/>
-                </linearGradient>
-              </defs>
-              <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
-              <XAxis 
-                dataKey="bulan" 
-                tick={{ fill: '#6b7280' }}
-              />
-              <YAxis tick={{ fill: '#6b7280' }} />
-              <Tooltip 
-                contentStyle={{ 
-                  backgroundColor: 'rgba(255, 255, 255, 0.95)',
-                  border: '1px solid #e5e7eb',
-                  borderRadius: '8px'
-                }}
-              />
-              <Legend />
-              <Line 
-                type="monotone" 
-                dataKey="terisi" 
-                stroke="#8b5cf6" 
-                strokeWidth={3}
-                fill="url(#colorTerisi)"
-                name="Survey Terisi"
-                dot={{ fill: '#8b5cf6', r: 5 }}
-                activeDot={{ r: 7 }}
-              />
-              <Line 
-                type="monotone" 
-                dataKey="total" 
-                stroke="#06b6d4" 
-                strokeWidth={3}
-                fill="url(#colorTotal)"
-                name="Target Total"
-                dot={{ fill: '#06b6d4', r: 5 }}
-                strokeDasharray="5 5"
-              />
-            </LineChart>
-          </ResponsiveContainer>
-          <div className="mt-4 flex justify-center gap-8">
-            <div className="flex items-center gap-2">
-              <div className="w-4 h-4 rounded-full bg-purple-600"></div>
-              <span className="text-sm text-gray-700 dark:text-gray-300">Survey Terisi: {totalSurveyTerisi}</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <div className="w-4 h-4 rounded-full bg-cyan-600"></div>
-              <span className="text-sm text-gray-700 dark:text-gray-300">Target Total: {totalSurveyTarget}</span>
-            </div>
+            {dataWilayah.length > 0 ? (
+              <ResponsiveContainer width="100%" height={400}>
+                <BarChart data={dataWilayah}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+                  <XAxis 
+                    dataKey="wilayah" 
+                    tick={{ fill: '#6b7280' }}
+                    angle={-15}
+                    textAnchor="end"
+                    height={60}
+                  />
+                  <YAxis tick={{ fill: '#6b7280' }} />
+                  <Tooltip 
+                    contentStyle={{ 
+                      backgroundColor: 'rgba(255, 255, 255, 0.95)',
+                      border: '1px solid #e5e7eb',
+                      borderRadius: '8px'
+                    }}
+                  />
+                  <Bar dataKey="total" radius={[8, 8, 0, 0]}>
+                    {dataWilayah.map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={entry.color} />
+                    ))}
+                  </Bar>
+                </BarChart>
+              </ResponsiveContainer>
+            ) : (
+              <div className="flex items-center justify-center h-[400px] text-gray-500 dark:text-gray-400">
+                Belum ada data wilayah
+              </div>
+            )}
           </div>
         </div>
 

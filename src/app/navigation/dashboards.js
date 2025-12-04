@@ -28,7 +28,7 @@ export const dashboards = {
             path: path(ROOT_DASHBOARDS, '/survey'),
             type: NAV_TYPE_ITEM,
             title: 'Survey',
-            transKey: 'survey',
+            transKey: 'Survey',
             Icon: FaStore
         },
         {
@@ -53,6 +53,14 @@ export const dashboards = {
             type: NAV_TYPE_ITEM,
             title: 'users',
             transKey: 'Users',
+            Icon: FaStore
+        },
+        {
+            id: 'dashboards.hasil-survey',
+            path: path(ROOT_DASHBOARDS, '/hasil-survey'),
+            type: NAV_TYPE_ITEM,
+            title: 'Hasil Survey',
+            transKey: 'Hasil Survey',
             Icon: FaStore
         },
     ]

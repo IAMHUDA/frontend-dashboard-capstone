@@ -61,6 +61,12 @@ const protectedRoutes = {
                 Component: (await import("app/pages/dashboards/users")).default,
               }),
             },
+            {
+              path: "hasil-survey",
+              lazy: async () => ({
+                Component: (await import("app/pages/dashboards/hasil-survey")).default,
+              }),
+            },
           ],
         },
       ],
