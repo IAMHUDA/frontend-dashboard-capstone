@@ -9,29 +9,29 @@ import { useDidUpdate, useIsomorphicEffect } from "hooks";
 import AuthContext from "app/contexts/auth/authContext";
 
 export function Menu() {
-  console.log("🔥 Menu component render!");
-  console.log("➡️ isInitialized:", isInitialized);
-  console.log("➡️ user:", user);
+  // console.log("🔥 Menu component render!");
+  // console.log("➡️ isInitialized:", isInitialized);
+  // console.log("➡️ user:", user);
   const { pathname } = useLocation();
   const ref = useRef();
 
   const { user, isInitialized } = useContext(AuthContext);
 
-  console.log("Menu render: user=", user, "isInitialized=", isInitialized);
+  // console.log("Menu render: user=", user, "isInitialized=", isInitialized);
 
   const navigation = useMemo(() => {
-  console.log("🧩 useMemo triggered!");
-  console.log("🔍 user:", user);
-  console.log("🔍 user?.is_admin:", user?.is_admin);
-  console.log("🔍 rawNavigation:", rawNavigation);
+  // console.log("🧩 useMemo triggered!");
+  // console.log("🔍 user:", user);
+  // console.log("🔍 user?.is_admin:", user?.is_admin);
+  // console.log("🔍 rawNavigation:", rawNavigation);
   if (!isInitialized || !user) return [];
-  console.log("➡️ user.is_admin di useMemo:", user.is_admin);
+  // console.log("➡️ user.is_admin di useMemo:", user.is_admin);
   return rawNavigation.map((nav) => {
     if (nav.id === "dashboards" && Array.isArray(nav.childs)) {
       return {
         ...nav,
         childs: nav.childs.filter((item) => {
-          console.log("📌 Checking user.is_admin inside filter:", user.is_admin);
+          // console.log("📌 Checking user.is_admin inside filter:", user.is_admin);
           return !!user.is_admin;
         }),
       };
@@ -61,10 +61,10 @@ export function Menu() {
     activeItem?.scrollIntoView({ block: "center" });
   }, []);
 
-  console.log("Filtered navigation:", navigation);
+  // console.log("Filtered navigation:", navigation);
 
   if (!isInitialized) {
-    console.log("Menu: waiting for initialization...");
+    // console.log("Menu: waiting for initialization...");
     return null; // atau bisa return loader
   }
 

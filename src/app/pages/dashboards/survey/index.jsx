@@ -32,7 +32,7 @@ const SurveyForm = ({ onSubmit, swalClose, data = {} }) => {
       return;
     }
 
-    console.log("FORM SUBMIT =>", { namaSurvey, deskripsi, tanggalDibuat });
+    // console.log("FORM SUBMIT =>", { namaSurvey, deskripsi, tanggalDibuat });
 
     onSubmit({
       namaSurvey,
@@ -114,11 +114,11 @@ export default function SurveyPage() {
   /* ---------------- FETCH ---------------- */
   const loadSurvey = async () => {
     try {
-      console.log("FETCH SURVEY ->", api.surveys.list);
+      // console.log("FETCH SURVEY ->", api.surveys.list);
       const res = await axios.get(api.surveys.list);
-      console.log("RAW RESPONSE =>", res.data);
+      // console.log("RAW RESPONSE =>", res.data);
       const mapped = res.data?.data || [];
-      console.log("MAPPED =>", mapped);
+      // console.log("MAPPED =>", mapped);
       setSurveys(mapped);
     } catch (err) {
       console.error("FETCH ERROR =>", err);
@@ -133,9 +133,9 @@ export default function SurveyPage() {
   /* ---------------- CREATE / UPDATE / DELETE ---------------- */
   const createSurvey = async (payload) => {
     try {
-      console.log("CREATE PAYLOAD =>", payload);
-      const res = await axios.post(api.surveys.create, payload);
-      console.log("CREATE RESPONSE =>", res.data);
+      // console.log("CREATE PAYLOAD =>", payload);
+      await axios.post(api.surveys.create, payload);
+      // console.log("CREATE RESPONSE =>", res.data);
       Swal.fire({
         icon: "success",
         title: "Berhasil!",
@@ -157,9 +157,9 @@ export default function SurveyPage() {
 
   const updateSurvey = async (id, payload) => {
     try {
-      console.log("UPDATE ID =>", id, "PAYLOAD =>", payload);
-      const res = await axios.put(api.surveys.update(id), payload);
-      console.log("UPDATE RESPONSE =>", res.data);
+      // console.log("UPDATE ID =>", id, "PAYLOAD =>", payload);
+      await axios.put(api.surveys.update(id), payload);
+      // console.log("UPDATE RESPONSE =>", res.data);
       Swal.fire({
         icon: "success",
         title: "Berhasil!",
@@ -203,10 +203,10 @@ export default function SurveyPage() {
     if (!confirm.isConfirmed) return;
 
     try {
-      console.log("DELETE ID =>", id);
+      // console.log("DELETE ID =>", id);
       setDeletingId(id);
-      const res = await axios.delete(api.surveys.delete(id));
-      console.log("DELETE RESPONSE =>", res.data);
+      await axios.delete(api.surveys.delete(id));
+      // console.log("DELETE RESPONSE =>", res.data);
       setTimeout(() => {
         setDeletingId(null);
       }, 300);

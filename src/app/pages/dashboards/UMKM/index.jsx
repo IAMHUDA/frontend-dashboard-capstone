@@ -39,7 +39,7 @@ export default function UMKM() {
     queryFn: async () => {
       try {
         const res = await axios.get(api.umkm.list);
-        console.log("UMKM Data Response:", res.data);
+        // console.log("UMKM Data Response:", res.data);
         return Array.isArray(res.data) ? res.data : [];
       } catch (err) {
         console.error("Error fetching UMKM:", err);

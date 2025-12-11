@@ -1,4 +1,4 @@
-const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:5000/api";
+const API_BASE_URL = import.meta.env.VITE_API_URL || "https://77041c2b-0fb5-419c-b8b3-98dbf2736d71-00-2piotboaj43n9.picard.replit.dev/api";
 
 
 const api = {

@@ -19,7 +19,7 @@ export default function HasilSurvey() {
     queryFn: async () => {
       try {
         const res = await axios.get(api.surveys.list);
-        console.log("Survey List Response:", res.data);
+        // console.log("Survey List Response:", res.data);
         // Handle response structure: res.data.data or res.data
         const data = res.data.data || res.data;
         return Array.isArray(data) ? data : [];
@@ -62,7 +62,7 @@ export default function HasilSurvey() {
 
       // Fetch results for this survey
       const res = await axios.get(api.results.getBySurvey(survey.id));
-      console.log("Survey Results Response:", res.data);
+      // console.log("Survey Results Response:", res.data);
       
       // New structure: res.data.data contains survey with jawaban array
       const surveyData = res.data.data || res.data;

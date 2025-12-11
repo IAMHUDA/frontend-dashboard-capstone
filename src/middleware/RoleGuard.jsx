@@ -15,7 +15,7 @@ export function RoleGuard({ allowedRoles }) {
   const { user } = useAuthContext();
   const userRole = user?.role?.toLowerCase();
 
-  console.log("🔒 RoleGuard Check:", { userRole, allowedRoles, user });
+  // console.log("🔒 RoleGuard Check:", { userRole, allowedRoles, user });
 
   // If no role restrictions, allow access
   if (!allowedRoles || allowedRoles.length === 0) {
@@ -26,12 +26,12 @@ export function RoleGuard({ allowedRoles }) {
   const hasAccess = allowedRoles.includes(userRole);
 
   if (!hasAccess) {
-    console.log("❌ Access Denied - Redirecting to /dashboards/home");
+    // console.log("❌ Access Denied - Redirecting to /dashboards/home");
     // Redirect to home if user doesn't have access
     return <Navigate to="/dashboards/home" replace />;
   }
 
-  console.log("✅ Access Granted");
+  // console.log("✅ Access Granted");
   return <Outlet />;
 }
 

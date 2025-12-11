@@ -8,7 +8,7 @@ import { Header } from "./Header";
 // ----------------------------------------------------------------------
 
 export default function Sideblock() {
-  console.log("🧩 Sideblock render!");
+  // console.log("🧩 Sideblock render!");
   return (
     <>
       <Header />
