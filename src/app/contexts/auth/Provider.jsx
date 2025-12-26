@@ -1,5 +1,5 @@
 // src/app/contexts/auth/Provider.jsx
-import {useReducer, useEffect } from "react";
+import { useReducer, useEffect } from "react";
 import PropTypes from "prop-types";
 import isObject from "lodash/isObject";
 import isString from "lodash/isString";
@@ -117,10 +117,10 @@ export function AuthProvider({ children }) {
       localStorage.setItem("authToken", token);
 
       dispatch({ type: "LOGIN_SUCCESS", payload: { user } });
-      
-      // Redirect ke dashboard home setelah login berhasil
+
+      // Redirect ke dashboard survey setelah login berhasil
       // Gunakan window.location.href untuk full page reload yang akan reset React Query cache
-      window.location.href = "/dashboards/home";
+      window.location.href = "/dashboards/survey";
     } catch (err) {
       console.error("❌ Login error:", err);
       dispatch({

@@ -2,6 +2,7 @@ import { EnvelopeIcon, LockClosedIcon } from "@heroicons/react/24/outline";
 import { yupResolver } from "@hookform/resolvers/yup";
 import { useForm } from "react-hook-form";
 import { useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import Logo from "assets/bantul3.svg";
 import { Button, Card, Input, InputErrorMsg } from "components/ui";
 import { useAuthContext } from "app/contexts/auth/context";
@@ -16,6 +17,10 @@ import { randomId } from "utils/randomId";
 export default function SignIn() {
   const { login, errorMessage } = useAuthContext();
   const [showPassword, setShowPassword] = useState(false);
+  const [searchParams] = useSearchParams();
+
+  // Hanya tampilkan link Daftar Akun jika URL memiliki ?register=true
+  const showRegisterLink = searchParams.get('register') === 'true';
 
   const {
     register,
@@ -99,11 +104,11 @@ export default function SignIn() {
     }).then((result) => {
       if (result.isConfirmed) {
         Swal.fire({
-            icon: 'success',
-            title: 'Berhasil!',
-            text: 'Akun berhasil dibuat. Silakan login.',
-            timer: 2000,
-            showConfirmButton: false
+          icon: 'success',
+          title: 'Berhasil!',
+          text: 'Akun berhasil dibuat. Silakan login.',
+          timer: 2000,
+          showConfirmButton: false
         });
       }
     });
@@ -191,18 +196,20 @@ export default function SignIn() {
               </Button>
             </form>
 
-            <div className="mt-4 text-center">
+            {showRegisterLink && (
+              <div className="mt-4 text-center">
                 <p className="text-sm text-gray-600 dark:text-gray-400">
-                    Belum punya akun?{' '}
-                    <button 
-                        type="button" 
-                        onClick={handleRegister}
-                        className="text-blue-600 hover:text-blue-700 font-medium hover:underline dark:text-blue-400"
-                    >
-                        Daftar Akun
-                    </button>
+                  Belum punya akun?{' '}
+                  <button
+                    type="button"
+                    onClick={handleRegister}
+                    className="text-blue-600 hover:text-blue-700 font-medium hover:underline dark:text-blue-400"
+                  >
+                    Daftar Akun
+                  </button>
                 </p>
-            </div>
+              </div>
+            )}
           </Card>
         </div>
       </main>

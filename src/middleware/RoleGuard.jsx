@@ -27,8 +27,8 @@ export function RoleGuard({ allowedRoles }) {
 
   if (!hasAccess) {
     // console.log("❌ Access Denied - Redirecting to /dashboards/home");
-    // Redirect to home if user doesn't have access
-    return <Navigate to="/dashboards/home" replace />;
+    // Redirect to survey if user doesn't have access
+    return <Navigate to="/dashboards/survey" replace />;
   }
 
   // console.log("✅ Access Granted");

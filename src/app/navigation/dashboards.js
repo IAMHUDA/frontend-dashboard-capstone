@@ -1,4 +1,3 @@
-import { HomeIcon } from '@heroicons/react/24/outline';
 import DashboardsIcon from 'assets/dualicons/dashboards.svg?react'
 import { NAV_TYPE_ROOT, NAV_TYPE_ITEM } from 'constants/app.constant'
 import { FaStore } from "react-icons/fa";
@@ -15,15 +14,6 @@ export const dashboards = {
     transKey: 'nav.dashboards.dashboards',
     Icon: DashboardsIcon,
     childs: [
-        {
-            id: 'dashboards.home',
-            path: path(ROOT_DASHBOARDS, '/home'),
-            type: NAV_TYPE_ITEM,
-            title: 'Home',
-            transKey: 'Home',
-            Icon: HomeIcon,
-            allowedRoles: ['super_admin', 'admin', 'warga'], // All roles can access
-        },
         {
             id: 'dashboards.survey',
             path: path(ROOT_DASHBOARDS, '/survey'),

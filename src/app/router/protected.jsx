@@ -29,13 +29,7 @@ const protectedRoutes = {
           children: [
             {
               index: true,
-              element: <Navigate to="/dashboards/home" />,
-            },
-            {
-              path: "home",
-              lazy: async () => ({
-                Component: (await import("app/pages/dashboards/home")).default,
-              }),
+              element: <Navigate to="/dashboards/survey" />,
             },
             // Survey - Only super_admin and admin
             {
