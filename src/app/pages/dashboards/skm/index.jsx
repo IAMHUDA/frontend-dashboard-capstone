@@ -29,14 +29,27 @@ const ANSWER_MAP = {
 
 const getScore = (text) => {
     if (!text) return 0;
-    // Try exact match
+
+    // 1. Check if answer starts with a number (e.g., "3. Sesuai")
+    const match = text.match(/^(\d+)/);
+    if (match && match[1]) {
+        return parseInt(match[1]);
+    }
+
+    // 2. Fallback to text matching
     if (ANSWER_MAP[text]) return ANSWER_MAP[text];
-    // Try partial match
+
     const lower = text.toLowerCase();
     if (lower.includes("sangat")) return 4;
-    if (lower.includes("kurang")) return 2;
+
+    // Check negatives first
     if (lower.includes("tidak")) return 1;
-    return 3; // Default to 'Baik'/'Sesuai' if mostly positive or unspecified standard
+    if (lower.includes("kurang")) return 2;
+
+    // Positive fallbacks
+    if (lower.includes("baik") || lower.includes("sesuai") || lower.includes("mudah")) return 3;
+
+    return 0; // Unknown
 }
 
 export default function SKMDashboard() {
@@ -69,9 +82,8 @@ export default function SKMDashboard() {
 
         const answers = surveyResult.jawaban;
 
-        // Group by Question Index (assuming first 9 questions are U1-U9)
-        // We map answers to questions first
-        const questionMap = {}; // { questionId: { text, scores: [] } }
+        // 1. Group answers by Question ID
+        const questionMap = {}; // { questionId: { text, answers: [{answer, score}] } }
 
         answers.forEach(ans => {
             const qId = ans.pertanyaan_id;
@@ -80,24 +92,74 @@ export default function SKMDashboard() {
             if (!questionMap[qId]) {
                 questionMap[qId] = {
                     text: ans.pertanyaan?.teks || "",
-                    scores: []
+                    answers: []
                 };
             }
-            questionMap[qId].scores.push(score);
+            questionMap[qId].answers.push({
+                val: ans.jawaban, // Keep raw answer for biodata
+                score: score
+            });
         });
 
-        const questionKeys = Object.keys(questionMap);
+        const sortedQuestionIds = Object.keys(questionMap).sort((a, b) => {
+            // Sort by the number prefix in the Question Text (e.g., "1. Jenis Kelamin")
+            const textA = questionMap[a].text || "";
+            const textB = questionMap[b].text || "";
+
+            const numA = parseInt(textA.match(/^(\d+)/)?.[1] || "999");
+            const numB = parseInt(textB.match(/^(\d+)/)?.[1] || "999");
+
+            return numA - numB;
+        });
+
+        // 2. Identify Sections based on user requirement (Q1-Q5 = Biodata, Q6-Q14 = U1-U9)
+        // Indices 0-4 = Biodata, Indices 5-13 = U1-U9
+
+        // --- Biodata Processing ---
+        const genderQ_Id = sortedQuestionIds[0]; // Q1
+        const eduQ_Id = sortedQuestionIds[2];    // Q3
+
+        // Gender Stats
+        const genderAnswers = genderQ_Id ? questionMap[genderQ_Id].answers : [];
+        const maleCount = genderAnswers.filter(a => {
+            const val = a.val?.toLowerCase() || "";
+            return val === 'l' || val.includes('laki');
+        }).length;
+        const femaleCount = genderAnswers.filter(a => {
+            const val = a.val?.toLowerCase() || "";
+            return val === 'p' || val.includes('perempuan') || val.includes('wanita');
+        }).length;
+
+        // Total should be based on unique submissions for Q1, fallback to answers.length/14 only if Q1 is missing
+        const totalRespondents = genderAnswers.length || (answers.length / 14);
+
+        // Education Stats
+        const eduAnswers = eduQ_Id ? questionMap[eduQ_Id].answers : [];
+        const eduStats = {
+            S2: eduAnswers.filter(a => a.val?.includes('S2')).length,
+            S1: eduAnswers.filter(a => a.val?.includes('S1') || a.val?.includes('D4')).length,
+            SMA: eduAnswers.filter(a => a.val?.includes('SMA') || a.val?.includes('SLTA')).length,
+            SMP: eduAnswers.filter(a => a.val?.includes('SMP') || a.val?.includes('SLTP')).length,
+            SD: eduAnswers.filter(a => a.val?.includes('SD')).length,
+            Total: eduAnswers.length || 1 // Avoid div by 0
+        };
+
+
+        // --- Service Elements (U1-U9) Processing ---
+        // Questions 6 to 14 (Indices 5 to 13)
+        const elementQuestionIds = sortedQuestionIds.slice(5, 14);
 
         const elementStats = ELEMENTS.map((elem, index) => {
-            const qKey = questionKeys[index];
-            const qData = qKey ? questionMap[qKey] : { scores: [] };
+            // Map U1 (Index 0 in ELEMENTS) to First Question of Slice (Index 0 in elementQuestionIds)
+            const qKey = elementQuestionIds[index];
+            const qData = qKey ? questionMap[qKey] : { answers: [] };
+            const scores = qData.answers.map(a => a.score);
 
-            const totalScore = qData.scores.reduce((a, b) => a + b, 0);
-            const count = qData.scores.length || 1;
+            const totalScore = scores.reduce((a, b) => a + b, 0);
+            const count = scores.length || 1;
             const avg = totalScore / count;
 
             // Index per element (0-100 scale based on 1-4)
-            // Formula: (Avg / 4) * 100
             const indexValue = (avg / 4) * 100;
 
             return {
@@ -114,12 +176,17 @@ export default function SKMDashboard() {
             : 0;
 
         return {
-            totalRespondents: answers.length > 0 ? answers.length / 9 : 0, // Rough estimate if we have 9 questions per person
+            totalRespondents: Math.floor(totalRespondents),
+            gender: { male: maleCount, female: femaleCount },
+            education: eduStats,
             ikm: ikm,
             elements: elementStats
         };
 
     }, [surveyResult]);
+
+
+
 
     // --- Auto-Select First Survey ---
     useEffect(() => {
@@ -239,25 +306,28 @@ export default function SKMDashboard() {
                         </div>
                     </div>
 
-                    {/* Education Stats */}
+                    {/* Education Stats - Real Data */}
                     <div className="bg-white dark:bg-dark-800 rounded-2xl p-6 shadow-lg border border-gray-100 dark:border-dark-700">
                         <h3 className="bg-gradient-to-r from-teal-700 to-teal-600 text-white font-bold py-2 px-4 rounded-lg text-center uppercase mb-4 text-sm tracking-wide shadow-md">
                             Pendidikan Responden
                         </h3>
-                        <div className="space-y-3">
-                            <EduBar label="S2" count={3} total={42} color="bg-blue-800" />
-                            <EduBar label="D4/S1" count={11} total={42} color="bg-green-600" />
-                            <EduBar label="SMA" count={23} total={42} color="bg-yellow-500" />
-                            <EduBar label="SMP" count={3} total={42} color="bg-pink-600" />
-                            <EduBar label="SD" count={0} total={42} color="bg-purple-600" />
-                        </div>
-                        <p className="text-xs text-center text-gray-400 mt-4 italic">* Data simulasi (pendidikan)</p>
+                        {stats ? (
+                            <div className="space-y-3">
+                                <EduBar label="S2" count={stats.education.S2} total={stats.education.Total} color="bg-blue-800" />
+                                <EduBar label="D4/S1" count={stats.education.S1} total={stats.education.Total} color="bg-green-600" />
+                                <EduBar label="SMA" count={stats.education.SMA} total={stats.education.Total} color="bg-yellow-500" />
+                                <EduBar label="SMP" count={stats.education.SMP} total={stats.education.Total} color="bg-pink-600" />
+                                <EduBar label="SD" count={stats.education.SD} total={stats.education.Total} color="bg-purple-600" />
+                            </div>
+                        ) : (
+                            <div className="text-center opacity-50 py-4">Memuat data...</div>
+                        )}
                     </div>
 
-                    {/* Respondent Gender Stats */}
+                    {/* Respondent Gender Stats - Real Data */}
                     <div className="bg-teal-50 dark:bg-dark-800 rounded-2xl p-4 shadow-lg border border-teal-100 dark:border-dark-700 text-gray-800 dark:text-gray-100">
                         <h3 className="font-bold text-sm uppercase mb-3 border-b border-gray-200 dark:border-gray-700 pb-2 flex items-center gap-2 text-teal-700 dark:text-teal-400">
-                            <UserGroupIcon className="w-4 h-4" /> Jumlah Responden
+                            <UserGroupIcon className="w-4 h-4" /> Demografi Gender
                         </h3>
                         <div className="space-y-2">
                             <div className="flex items-center justify-between bg-white dark:bg-dark-700 rounded-lg p-3 shadow-sm">
@@ -265,7 +335,18 @@ export default function SKMDashboard() {
                                     <div className="w-2 h-2 rounded-full bg-blue-500"></div>
                                     <span>Laki - laki</span>
                                 </div>
-                                <span className="font-bold">{Math.floor(stats?.totalRespondents || 42)} <span className="text-xs font-normal opacity-70">Org</span></span>
+                                <span className="font-bold">{stats?.gender?.male || 0} <span className="text-xs font-normal opacity-70">Org</span></span>
+                            </div>
+                            <div className="flex items-center justify-between bg-white dark:bg-dark-700 rounded-lg p-3 shadow-sm">
+                                <div className="flex items-center gap-2">
+                                    <div className="w-2 h-2 rounded-full bg-pink-500"></div>
+                                    <span>Perempuan</span>
+                                </div>
+                                <span className="font-bold">{stats?.gender?.female || 0} <span className="text-xs font-normal opacity-70">Org</span></span>
+                            </div>
+                            <div className="flex items-center justify-between pt-2 border-t border-gray-200 dark:border-gray-700 mt-2">
+                                <span className="text-xs font-bold uppercase opacity-70">Total Responden</span>
+                                <span className="font-bold text-lg text-teal-600 dark:text-teal-400">{stats?.totalRespondents || 0}</span>
                             </div>
                         </div>
                     </div>
