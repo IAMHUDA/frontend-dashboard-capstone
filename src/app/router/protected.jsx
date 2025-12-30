@@ -86,6 +86,18 @@ const protectedRoutes = {
                 },
               ],
             },
+            // SKM Dashboard - Only super_admin and admin
+            {
+              Component: AdminOnlyGuard,
+              children: [
+                {
+                  path: "skm",
+                  lazy: async () => ({
+                    Component: (await import("app/pages/dashboards/skm")).default,
+                  }),
+                },
+              ],
+            },
           ],
         },
       ],
