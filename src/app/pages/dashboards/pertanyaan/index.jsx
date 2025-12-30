@@ -481,6 +481,17 @@ export default function Pertanyaan() {
         )
         .join("")}
           </select>
+
+          <div class="mb-4 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-100 dark:border-blue-800 flex items-center justify-between">
+              <div>
+                 <p class="text-sm text-blue-800 dark:text-blue-200 font-medium">Opsi Cepat</p>
+                 <p class="text-xs text-blue-600 dark:text-blue-300">Tambahkan pertanyaan profil standar secara otomatis.</p>
+              </div>
+              <button id="btn-generate-profile" class="text-sm bg-blue-600 hover:bg-blue-700 text-white py-2 px-3 rounded-lg transition-colors shadow-sm">
+                  + Generate Profil
+              </button>
+           </div>
+
           <label class="block mb-2 text-gray-900 dark:text-gray-200">Tipe Pertanyaan:</label>
           <select id="swal-type" class="w-full p-2 border border-gray-300 dark:border-dark-600 rounded-lg mb-3 bg-white dark:bg-dark-700 text-gray-900 dark:text-gray-200">
             <option value="isian">Isian</option> <option value="pilihan_ganda">Pilihan Ganda</option>
@@ -494,6 +505,70 @@ export default function Pertanyaan() {
         const typeSelect = document.getElementById("swal-type");
         const fieldWrap = document.getElementById("dynamic-field");
         const surveySelect = document.getElementById("swal-survey"); // Fungsi untuk merender input opsi dinamis
+
+        // NEW: Listener untuk Generate Profil
+        document.getElementById("btn-generate-profile").addEventListener("click", () => {
+             const surveyId = surveySelect.value;
+             const profileQuestions = [
+                {
+                    surveyId,
+                    tipe: 'pilihan_ganda',
+                    teks: 'Jenis Kelamin',
+                    urutan: 0,
+                    opsi: ['L', 'P']
+                },
+                {
+                    surveyId,
+                    tipe: 'isian',
+                    teks: 'Usia (Tahun)',
+                    urutan: 0,
+                },
+                {
+                    surveyId,
+                    tipe: 'pilihan_ganda',
+                    teks: 'Pendidikan',
+                    urutan: 0,
+                    opsi: ['SD', 'SMP', 'SMA', 'S1', 'S2', 'S3']
+                },
+                {
+                    surveyId,
+                    tipe: 'pilihan_ganda',
+                    teks: 'Pekerjaan',
+                    urutan: 0,
+                    opsi: ['PNS', 'TNI', 'POLRI', 'SWASTA', 'WIRASWASTA', 'LAINNYA']
+                },
+                {
+                    surveyId,
+                    tipe: 'isian',
+                    teks: 'Jenis Layanan yang diterima (Misal :Konsultasi, permohonan data, dll',
+                    urutan: 0,
+                }
+             ];
+             
+             // Tambahkan ke tempQuestions
+             profileQuestions.forEach((q) => {
+                 q.urutan = tempQuestions.length + 1; 
+                 tempQuestions.push(q);
+             });
+             
+             document.getElementById("list-preview").innerHTML = refreshListHTML();
+             
+             // Feedback visual
+             const btnGen = document.getElementById("btn-generate-profile");
+             const originalText = btnGen.innerText;
+             btnGen.innerText = "✓ Ditambahkan!";
+             btnGen.disabled = true;
+             btnGen.classList.remove("bg-blue-600", "hover:bg-blue-700");
+             btnGen.classList.add("bg-green-600", "cursor-not-allowed");
+             
+             // Kembalikan tombol setelah beberapa detik (opsional, tapi user mungkin mau add lagi kalau salah hapus? tapi disable dulu biar ga double klik gak sengaja)
+             setTimeout(() => {
+                 btnGen.innerText = originalText;
+                 btnGen.disabled = false;
+                 btnGen.classList.add("bg-blue-600", "hover:bg-blue-700");
+                 btnGen.classList.remove("bg-green-600", "cursor-not-allowed");
+             }, 2000);
+        });
 
         const renderOpsiInputs = (initialCount = 2) => {
           let html = `

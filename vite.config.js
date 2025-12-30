@@ -11,4 +11,9 @@ export default defineConfig({
   plugins: [react(), jsconfigPaths(), svgr(),
   eslint(), tailwindcss(),
   ],
+  test: {
+    environment: 'jsdom',
+    globals: true,
+    setupFiles: './src/setupTests.js',
+  },
 })
