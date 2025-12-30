@@ -62,7 +62,7 @@ export default function HasilSurvey() {
 
       // Fetch results for this survey
       const res = await axios.get(api.results.getBySurvey(survey.id));
-      // console.log("Survey Results Response:", res.data);
+      console.log("Survey Results Response:", res.data);
       
       // New structure: res.data.data contains survey with jawaban array
       const surveyData = res.data.data || res.data;
@@ -85,7 +85,23 @@ export default function HasilSurvey() {
       }
 
       // Display results - jawaban is array of { id, jawaban, pertanyaan: { teks, ... } }
-      const resultsHtml = answers.map((item, index) => {
+      // Group biodata (jenis kelamin, usia, pendidikan, pekerjaan, jenis layanan) separately for clarity
+      const isBiodata = (text) => {
+        if (!text) return false;
+        const t = text.toLowerCase();
+        return (
+          t.includes('jenis kelamin') ||
+          t.includes('usia') ||
+          t.includes('pendidikan') ||
+          t.includes('pekerjaan') ||
+          t.includes('jenis layanan')
+        );
+      };
+
+      const biodataItems = answers.filter(a => isBiodata(a.pertanyaan?.teks));
+      const otherItems = answers.filter(a => !isBiodata(a.pertanyaan?.teks));
+
+      const buildListHtml = (items) => items.map((item, index) => {
         const questionText = item.pertanyaan?.teks || 'Pertanyaan tidak tersedia';
         const answerText = item.jawaban || '-';
 
@@ -102,6 +118,8 @@ export default function HasilSurvey() {
           </div>
         `;
       }).join('');
+
+      const resultsHtml = `${buildListHtml(biodataItems)}${buildListHtml(otherItems)}`;
 
       Swal.fire({
         title: `Hasil Survey: ${survey.namaSurvey}`,
