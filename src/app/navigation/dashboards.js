@@ -1,6 +1,6 @@
 import DashboardsIcon from 'assets/dualicons/dashboards.svg?react'
 import { NAV_TYPE_ROOT, NAV_TYPE_ITEM } from 'constants/app.constant'
-import { FaStore } from "react-icons/fa";
+import { FaStore, FaChartPie } from "react-icons/fa";
 
 const ROOT_DASHBOARDS = '/dashboards'
 
@@ -14,6 +14,15 @@ export const dashboards = {
     transKey: 'nav.dashboards.dashboards',
     Icon: DashboardsIcon,
     childs: [
+        {
+            id: 'dashboards.skm',
+            path: path(ROOT_DASHBOARDS, '/skm'),
+            type: NAV_TYPE_ITEM,
+            title: 'Dashboard',
+            transKey: 'Dashboard',
+            Icon: FaChartPie,
+            allowedRoles: ['super_admin', 'admin'], // Only super_admin and admin
+        },
         {
             id: 'dashboards.survey',
             path: path(ROOT_DASHBOARDS, '/survey'),
