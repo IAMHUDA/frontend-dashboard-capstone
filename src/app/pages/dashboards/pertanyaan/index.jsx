@@ -482,14 +482,21 @@ export default function Pertanyaan() {
         .join("")}
           </select>
 
-          <div class="mb-4 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-100 dark:border-blue-800 flex items-center justify-between">
-              <div>
-                 <p class="text-sm text-blue-800 dark:text-blue-200 font-medium">Opsi Cepat</p>
-                 <p class="text-xs text-blue-600 dark:text-blue-300">Tambahkan pertanyaan profil standar secara otomatis.</p>
+          <div class="mb-4 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-100 dark:border-blue-800">
+              <div class="flex items-center justify-between mb-2">
+                 <div>
+                    <p class="text-sm text-blue-800 dark:text-blue-200 font-medium">Opsi Cepat</p>
+                    <p class="text-xs text-blue-600 dark:text-blue-300">Tambahkan pertanyaan standar secara otomatis.</p>
+                 </div>
               </div>
-              <button id="btn-generate-profile" class="text-sm bg-blue-600 hover:bg-blue-700 text-white py-2 px-3 rounded-lg transition-colors shadow-sm">
-                  + Generate Profil
-              </button>
+              <div class="flex gap-2">
+                  <button id="btn-generate-profile" class="flex-1 text-sm bg-blue-600 hover:bg-blue-700 text-white py-2 px-3 rounded-lg transition-colors shadow-sm">
+                      + Profil Responden
+                  </button>
+                  <button id="btn-generate-skm" class="flex-1 text-sm bg-purple-600 hover:bg-purple-700 text-white py-2 px-3 rounded-lg transition-colors shadow-sm">
+                      + Pertanyaan SKM (9 Unsur)
+                  </button>
+              </div>
            </div>
 
           <label class="block mb-2 text-gray-900 dark:text-gray-200">Tipe Pertanyaan:</label>
@@ -567,6 +574,99 @@ export default function Pertanyaan() {
                  btnGen.disabled = false;
                  btnGen.classList.add("bg-blue-600", "hover:bg-blue-700");
                  btnGen.classList.remove("bg-green-600", "cursor-not-allowed");
+             }, 2000);
+        });
+
+        // NEW: Listener untuk Generate SKM
+        document.getElementById("btn-generate-skm").addEventListener("click", () => {
+             const surveyId = surveySelect.value;
+             const skmQuestions = [
+                {
+                    surveyId,
+                    tipe: 'pilihan_ganda',
+                    teks: 'Bagaimana penilaian Anda mengenai kesesuaian persyaratan pelayanan yang harus dipenuhi dengan yang diinformasikan?',
+                    urutan: 0,
+                    opsi: ['Tidak Sesuai', 'Kurang Sesuai', 'Sesuai', 'Sangat Sesuai']
+                },
+                {
+                    surveyId,
+                    tipe: 'pilihan_ganda',
+                    teks: 'Bagaimana penilaian Anda mengenai kemudahan prosedur yang dijalani untuk mendapatkan layanan?',
+                    urutan: 0,
+                    opsi: ['Tidak Mudah', 'Kurang Mudah', 'Mudah', 'Sangat Mudah']
+                },
+                {
+                    surveyId,
+                    tipe: 'pilihan_ganda',
+                    teks: 'Bagaimana penilaian Anda tentang kesesuaian jangka waktu penyelesaian pelayanan dengan yang diinformasikan?',
+                    urutan: 0,
+                    opsi: ['Tidak Sesuai', 'Kurang Sesuai', 'Sesuai', 'Sangat Sesuai']
+                },
+                {
+                    surveyId,
+                    tipe: 'pilihan_ganda',
+                    teks: 'Bagaimana penilaian Anda tentang kesesuaian biaya pelayanan yang dibayarkan dengan yang diinformasikan?',
+                    urutan: 0,
+                    opsi: ['Tidak Sesuai', 'Kurang Sesuai', 'Sesuai', 'Sangat Sesuai']
+                },
+                {
+                    surveyId,
+                    tipe: 'pilihan_ganda',
+                    teks: 'Bagaimana penilaian Anda tentang kesesuaian produk pelayanan antara yang ada pada publikasi dengan pelayanan yang diberikan?',
+                    urutan: 0,
+                    opsi: ['Tidak Sesuai', 'Kurang Sesuai', 'Sesuai', 'Sangat Sesuai']
+                },
+                {
+                    surveyId,
+                    tipe: 'pilihan_ganda',
+                    teks: 'Bagaimana penilaian Anda terhadap kemampuan petugas pelayanan?',
+                    urutan: 0,
+                    opsi: ['Tidak Baik', 'Kurang Baik', 'Baik', 'Sangat Baik']
+                },
+                 {
+                    surveyId,
+                    tipe: 'pilihan_ganda',
+                    teks: 'Bagaimana penilaian Anda terhadap perilaku petugas pelayanan?',
+                    urutan: 0,
+                    opsi: ['Tidak Baik', 'Kurang Baik', 'Baik', 'Sangat Baik']
+                },
+                 {
+                    surveyId,
+                    tipe: 'pilihan_ganda',
+                    teks: 'Bagaimana penilaian Anda mengenai ketersediaan sarana/media untuk menyampaikan pengaduan/saran?',
+                    urutan: 0,
+                    opsi: ['Tidak Baik', 'Kurang Baik', 'Baik', 'Sangat Baik']
+                },
+                 {
+                    surveyId,
+                    tipe: 'pilihan_ganda',
+                    teks: 'Bagaimana penilaian Anda terhadap ketersediaan sarana dan prasarana pelayanan di unit pelayanan?',
+                    urutan: 0,
+                    opsi: ['Tidak Baik', 'Kurang Baik', 'Baik', 'Sangat Baik']
+                },
+             ];
+             
+             // Tambahkan ke tempQuestions
+             skmQuestions.forEach((q) => {
+                 q.urutan = tempQuestions.length + 1; 
+                 tempQuestions.push(q);
+             });
+             
+             document.getElementById("list-preview").innerHTML = refreshListHTML();
+             
+             // Feedback visual
+             const btnSkm = document.getElementById("btn-generate-skm");
+             const originalTextSkm = btnSkm.innerText;
+             btnSkm.innerText = "✓ Ditambahkan!";
+             btnSkm.disabled = true;
+             btnSkm.classList.remove("bg-purple-600", "hover:bg-purple-700");
+             btnSkm.classList.add("bg-green-600", "cursor-not-allowed");
+             
+             setTimeout(() => {
+                 btnSkm.innerText = originalTextSkm;
+                 btnSkm.disabled = false;
+                 btnSkm.classList.add("bg-purple-600", "hover:bg-purple-700");
+                 btnSkm.classList.remove("bg-green-600", "cursor-not-allowed");
              }, 2000);
         });
 
