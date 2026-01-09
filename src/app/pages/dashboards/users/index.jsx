@@ -19,6 +19,12 @@ const UserFormContent = ({ swalClose, onSubmit, initialData = {}, currentUserRol
     const [name, setName] = useState(initialData.name || "");
     const [email, setEmail] = useState(initialData.email || "");
     const [role, setRole] = useState(initialData.role || "warga");
+    
+    // Password state
+    const [password, setPassword] = useState("");
+    const [confirmPassword, setConfirmPassword] = useState("");
+    const [isChangingPassword, setIsChangingPassword] = useState(false);
+    const isEditMode = !!initialData.id;
 
     const handleSubmit = (e) => {
         e.preventDefault();
@@ -33,12 +39,53 @@ const UserFormContent = ({ swalClose, onSubmit, initialData = {}, currentUserRol
             return;
         }
 
-        onSubmit({ name, email, role });
+        // Validasi Password
+        // Jika mode create (tidak ada id), password wajib (kecuali backend handle default)
+        // Jika mode edit, password wajib hanya jika isChangingPassword true
+        
+        // Logic di sini: 
+        // Create user: kita minta password awal (atau default "12345678" jika tidak diisi, tapi sebaiknya diisi)
+        // Edit user: password optional
+
+        if (isEditMode) {
+             if (isChangingPassword) {
+                if (!password || password.length < 6) {
+                    Swal.showValidationMessage("Password minimal 6 karakter");
+                    return;
+                }
+                if (password !== confirmPassword) {
+                    Swal.showValidationMessage("Konfirmasi password tidak cocok");
+                    return;
+                }
+             }
+        } else {
+            // Mode Create: kita bisa buat input password optional dan set default di backend/submit,
+            // atau paksa input. Di kode sebelumnya default "12345678".
+            // Kita kasih opsi input password saat create juga biar fleksibel.
+            if (password && password.length < 6) {
+                 Swal.showValidationMessage("Password minimal 6 karakter");
+                 return;
+            }
+        }
+
+        const payload = { name, email, role };
+        
+        // Include password if meaningful
+        if (isEditMode) {
+            if (isChangingPassword && password) {
+                payload.password = password;
+            }
+        } else {
+             // Create mode: use input password or default
+             payload.password = password || "12345678";
+        }
+
+        onSubmit(payload);
         swalClose();
     };
 
     return (
-        <form onSubmit={handleSubmit} className="p-4 text-gray-900 dark:text-gray-100">
+        <form onSubmit={handleSubmit} className="p-4 text-gray-900 dark:text-gray-100 text-left">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
 
                 <div>
@@ -71,6 +118,74 @@ const UserFormContent = ({ swalClose, onSubmit, initialData = {}, currentUserRol
                         {currentUserRole !== "admin" && <option value="admin">Admin</option>}
                         <option value="warga">Warga</option>
                     </select>
+                </div>
+
+                {/* Password Section */}
+                <div className="md:col-span-2 border-t border-gray-200 dark:border-dark-600 pt-4 mt-2">
+                    {isEditMode ? (
+                        !isChangingPassword ? (
+                             <button 
+                                type="button"
+                                onClick={() => setIsChangingPassword(true)}
+                                className="text-sm font-medium text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 underline"
+                              >
+                                Ubah Password User Ini
+                              </button>
+                        ) : (
+                             <div className="bg-gray-50 dark:bg-dark-800 p-3 rounded-lg border border-gray-200 dark:border-dark-600">
+                                <div className="flex justify-between items-center mb-3">
+                                    <span className="text-sm font-semibold text-gray-700 dark:text-gray-200">Ubah Password Baru</span>
+                                    <button 
+                                        type="button" 
+                                        onClick={() => {
+                                            setIsChangingPassword(false);
+                                            setPassword("");
+                                            setConfirmPassword("");
+                                        }}
+                                        className="text-xs text-red-500 hover:text-red-700 font-medium"
+                                    >
+                                        Batal
+                                    </button>
+                                </div>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                     <div>
+                                        <label className="block text-xs font-medium mb-1 text-gray-900 dark:text-gray-100">Password Baru</label>
+                                        <input
+                                            className="w-full p-2 border border-gray-300 dark:border-dark-600 rounded-lg bg-white dark:bg-dark-700 text-gray-900 dark:text-gray-100 text-sm"
+                                            type="password"
+                                            placeholder="Min 6 karakter"
+                                            value={password}
+                                            onChange={(e) => setPassword(e.target.value)}
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="block text-xs font-medium mb-1 text-gray-900 dark:text-gray-100">Konfirmasi Password</label>
+                                        <input
+                                            className="w-full p-2 border border-gray-300 dark:border-dark-600 rounded-lg bg-white dark:bg-dark-700 text-gray-900 dark:text-gray-100 text-sm"
+                                            type="password"
+                                            placeholder="Ulangi password"
+                                            value={confirmPassword}
+                                            onChange={(e) => setConfirmPassword(e.target.value)}
+                                        />
+                                    </div>
+                                </div>
+                             </div>
+                        )
+                    ) : (
+                        // Mode Create: Simple input (Optional, defaults to 12345678)
+                         <div>
+                            <label className="block text-sm font-medium mb-1 text-gray-900 dark:text-gray-100">
+                                Password <span className="text-gray-400 font-normal text-xs">(Opsional, default: 12345678)</span>
+                            </label>
+                            <input
+                                className="w-full p-2 border border-gray-300 dark:border-dark-600 rounded-lg bg-white dark:bg-dark-700 text-gray-900 dark:text-gray-100"
+                                type="password"
+                                placeholder="******"
+                                value={password}
+                                onChange={(e) => setPassword(e.target.value)}
+                            />
+                        </div>
+                    )}
                 </div>
 
                 <button id="submit-user-form" type="submit" className="hidden">
@@ -130,7 +245,7 @@ export default function UsersPage() {
             await axios.post(api.users.create, {
                 nama: data.name,
                 email: data.email,
-                password: "12345678",
+                password: data.password, // Now coming from form
                 role: data.role.toUpperCase()
             });
 
@@ -155,11 +270,19 @@ export default function UsersPage() {
 
     const updateUser = async (id, data) => {
         try {
-            await axios.put(api.users.update(id), {
+            // Prepare payload
+            const payload = {
                 nama: data.name,
                 email: data.email,
                 role: data.role.toUpperCase()
-            });
+            };
+            
+            // Only add password if it exists (handled in form logic)
+            if (data.password) {
+                payload.password = data.password;
+            }
+
+            await axios.put(api.users.update(id), payload);
 
             Swal.fire({
         icon: "success",

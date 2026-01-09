@@ -24,6 +24,16 @@ const api = {
     getAnswers: (id) => `${API_BASE_URL}/surveys/${id}`, // endpoint ambil survey + jawaban
   },
 
+  results: {
+    getBySurvey: (id) => `${API_BASE_URL}/results/survey/${id}`,
+    // New Routes for Grouped Respondents
+    getRespondenList: (surveyId) => `${API_BASE_URL}/results/responden/${surveyId}`,
+    getDetailJawaban: (submissionId) => `${API_BASE_URL}/results/submission/${submissionId}`,
+    deleteSubmission: (submissionId) => `${API_BASE_URL}/results/submission/${submissionId}`,
+    deleteAllBySurvey: (surveyId) => `${API_BASE_URL}/results/survey/${surveyId}`,
+    submit: `${API_BASE_URL}/results`,
+  },
+
   questions: {
     getBySurvey: (surveyId) => `${API_BASE_URL}/questions/survey/${surveyId}`,
     get: (id) => `${API_BASE_URL}/questions/${id}`,
@@ -41,10 +51,7 @@ const api = {
     uploadFiles: `${API_BASE_URL}/umkm`, // POST/PUT multipart/form-data
   },
 
-  results: {
-    submit: `${API_BASE_URL}/results`,                // POST submit jawaban
-    getBySurvey: (surveyId) => `${API_BASE_URL}/surveys/${surveyId}` // GET jawaban per survey
-  },
+
 };
 
 export default api;

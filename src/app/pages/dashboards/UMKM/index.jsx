@@ -147,6 +147,7 @@ export default function UMKM() {
               <input type="number" id="swal-tahun" class="w-full p-2.5 border border-gray-300 dark:border-dark-600 rounded-lg bg-white dark:bg-dark-700 text-gray-900 dark:text-gray-200 focus:ring-blue-500 focus:border-blue-500" placeholder="2020">
             </div>
           </div>
+          </div>
           <div class="grid grid-cols-2 gap-4">
              <div>
               <label class="block mb-1 text-sm font-medium text-gray-900 dark:text-gray-200">Jumlah Karyawan</label>
@@ -156,6 +157,18 @@ export default function UMKM() {
               <label class="block mb-1 text-sm font-medium text-gray-900 dark:text-gray-200">Jangkauan Pemasaran</label>
               <input id="swal-jangkauan" class="w-full p-2.5 border border-gray-300 dark:border-dark-600 rounded-lg bg-white dark:bg-dark-700 text-gray-900 dark:text-gray-200 focus:ring-blue-500 focus:border-blue-500" placeholder="Contoh: Kota Jakarta">
             </div>
+          </div>
+          <div class="grid grid-cols-1 gap-4">
+            <div>
+              <label class="block mb-1 text-sm font-medium text-gray-900 dark:text-gray-200">No. Telepon</label>
+              <input id="swal-telp" class="w-full p-2.5 border border-gray-300 dark:border-dark-600 rounded-lg bg-white dark:bg-dark-700 text-gray-900 dark:text-gray-200 focus:ring-blue-500 focus:border-blue-500" placeholder="08123456789">
+            </div>
+          </div>
+          <div class="grid grid-cols-1 gap-4">
+               <div>
+                  <label class="block mb-1 text-sm font-medium text-gray-900 dark:text-gray-200">Keterangan Tambahan</label>
+                  <textarea id="swal-keterangan" rows="3" class="w-full p-2.5 border border-gray-300 dark:border-dark-600 rounded-lg bg-white dark:bg-dark-700 text-gray-900 dark:text-gray-200 focus:ring-blue-500 focus:border-blue-500" placeholder="Deskripsi singkat atau informasi tambahan..."></textarea>
+               </div>
           </div>
           
           <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -192,6 +205,8 @@ export default function UMKM() {
         const jumlahKaryawan = document.getElementById("swal-karyawan").value;
         const jangkauanPemasaran =
           document.getElementById("swal-jangkauan").value;
+        const noTelp = document.getElementById("swal-telp").value;
+        const keteranganTambahan = document.getElementById("swal-keterangan").value;
         const fotoInput = document.getElementById("swal-foto");
         const dokumenInput = document.getElementById("swal-dokumen");
 
@@ -206,6 +221,8 @@ export default function UMKM() {
         formData.append("tahunBerdiri", parseInt(tahunBerdiri) || 0);
         formData.append("jumlahKaryawan", parseInt(jumlahKaryawan) || 0);
         formData.append("jangkauanPemasaran", jangkauanPemasaran);
+        formData.append("noTelp", noTelp);
+        formData.append("keteranganTambahan", keteranganTambahan);
 
         if (fotoInput.files.length > 0) {
           formData.append("fotoProduk", fotoInput.files[0]);
@@ -266,6 +283,7 @@ export default function UMKM() {
               }">
             </div>
           </div>
+          </div>
           <div class="grid grid-cols-2 gap-4">
              <div>
               <label class="block mb-1 text-sm font-medium text-gray-900 dark:text-gray-200">Jumlah Karyawan</label>
@@ -278,6 +296,22 @@ export default function UMKM() {
               <input id="swal-edit-jangkauan" class="w-full p-2.5 border border-gray-300 dark:border-dark-600 rounded-lg bg-white dark:bg-dark-700 text-gray-900 dark:text-gray-200 focus:ring-blue-500 focus:border-blue-500" value="${
                 umkm.jangkauanPemasaran || ""
               }">
+            </div>
+          </div>
+          <div class="grid grid-cols-1 gap-4">
+             <div>
+              <label class="block mb-1 text-sm font-medium text-gray-900 dark:text-gray-200">No. Telepon</label>
+              <input id="swal-edit-telp" class="w-full p-2.5 border border-gray-300 dark:border-dark-600 rounded-lg bg-white dark:bg-dark-700 text-gray-900 dark:text-gray-200 focus:ring-blue-500 focus:border-blue-500" value="${
+                umkm.noTelp || ""
+              }">
+            </div>
+          </div>
+          <div class="grid grid-cols-1 gap-4">
+             <div>
+              <label class="block mb-1 text-sm font-medium text-gray-900 dark:text-gray-200">Keterangan Tambahan</label>
+              <textarea id="swal-edit-keterangan" rows="3" class="w-full p-2.5 border border-gray-300 dark:border-dark-600 rounded-lg bg-white dark:bg-dark-700 text-gray-900 dark:text-gray-200 focus:ring-blue-500 focus:border-blue-500">${
+                umkm.keteranganTambahan || ""
+              }</textarea>
             </div>
           </div>
 
@@ -327,6 +361,8 @@ export default function UMKM() {
         const jangkauanPemasaran = document.getElementById(
           "swal-edit-jangkauan",
         ).value;
+        const noTelp = document.getElementById("swal-edit-telp").value;
+        const keteranganTambahan = document.getElementById("swal-edit-keterangan").value;
         const fotoInput = document.getElementById("swal-edit-foto");
         const dokumenInput = document.getElementById("swal-edit-dokumen");
 
@@ -341,6 +377,8 @@ export default function UMKM() {
         formData.append("tahunBerdiri", parseInt(tahunBerdiri) || 0);
         formData.append("jumlahKaryawan", parseInt(jumlahKaryawan) || 0);
         formData.append("jangkauanPemasaran", jangkauanPemasaran);
+        formData.append("noTelp", noTelp);
+        formData.append("keteranganTambahan", keteranganTambahan);
 
         if (fotoInput.files.length > 0) {
           formData.append("fotoProduk", fotoInput.files[0]);
@@ -421,7 +459,24 @@ export default function UMKM() {
                        <path stroke-linecap="round" stroke-linejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0h18M5.25 12h13.5h-13.5zm0 6h13.5h-13.5z" />
                     </svg>
                     ${data.tahunBerdiri || "-"}
-                  </div>
+                 </div>
+            
+            <div class="flex flex-col gap-2 p-3 border border-gray-200 dark:border-dark-600 rounded-lg bg-white dark:bg-dark-800 my-2">
+                 <p class="text-xs text-gray-500 dark:text-gray-400">No. Telepon / WhatsApp</p>
+                 <div class="flex items-center gap-2 text-gray-900 dark:text-gray-100 font-medium">
+                     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5 text-indigo-500">
+                      <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 6.75c0 8.284 6.716 15 15 15h2.25a2.25 2.25 0 002.25-2.25v-1.372c0-.516-.351-.966-.852-1.091l-4.423-1.106c-.44-.11-.902.055-1.173.417l-.97 1.293c-.282.376-.769.542-1.21.38a12.035 12.035 0 01-7.143-7.143c-.162-.441.004-.928.38-1.21l1.293-.97c.363-.271.527-.734.417-1.173L6.963 3.102a1.125 1.125 0 00-1.091-.852H4.5A2.25 2.25 0 002.25 4.5v2.25z" />
+                    </svg>
+                    ${data.noTelp || "-"}
+                 </div>
+             </div>
+
+              <div class="p-3 border border-gray-200 dark:border-dark-600 rounded-lg bg-white dark:bg-dark-800">
+                  <p class="text-xs text-gray-500 dark:text-gray-400 mb-2">Keterangan Tambahan</p>
+                  <p class="text-sm text-gray-700 dark:text-gray-300 leading-relaxed whitespace-pre-wrap">
+                      ${data.keteranganTambahan || "-"}
+                  </p>
+              </div>
                </div>
             </div>
 

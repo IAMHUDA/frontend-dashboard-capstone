@@ -6,19 +6,24 @@ import api from "configs/api.config";
 import {
     UserGroupIcon,
 } from "@heroicons/react/24/solid";
-import mapQuestionsToIds from './mapping';
+import { mapQuestionsToIds } from './mapping';
 
 // --- Constants & Helpers ---
-const ELEMENTS = [
-    { code: "U1", name: "Persyaratan", color: "#7C2D6F" },
-    { code: "U2", name: "Prosedur", color: "#8B572A" },
-    { code: "U3", name: "Waktu", color: "#0f766e" },
-    { code: "U4", name: "Biaya/Tarif", color: "#ea580c" },
-    { code: "U5", name: "Produk", color: "#991b1b" },
-    { code: "U6", name: "Kompetensi", color: "#1e40af" },
-    { code: "U7", name: "Perilaku", color: "#3f6212" },
-    { code: "U8", name: "Sarana", color: "#ca8a04" },
-    { code: "U9", name: "Pengaduan", color: "#b91c1c" },
+const COLORS = [
+    '#FFD700', // Vibrant Yellow
+    '#FF007F', // Bright Pink
+    '#39FF14', // Neon Green
+    '#FF8C00', // Intense Orange
+    '#BF00FF', // Electric Purple
+    '#00BFFF', // Sky Blue
+    '#FF1A1A', // Brilliant Red
+    '#00FF7F', // Spring Green
+    '#E91E63', // Deep Pink
+    '#FFFF00', // Yellow
+    '#5A52D5', // Indigo
+    '#FA8072', // Salmon
+    '#20B2AA', // Light Sea Green
+    '#F0E68C', // Khaki
 ];
 
 const ANSWER_MAP = {
@@ -53,6 +58,35 @@ const getScore = (text) => {
     return 0; // Unknown
 }
 
+const getGrade = (value) => {
+    if (value >= 88.31) return "A";
+    if (value >= 76.61) return "B";
+    if (value >= 65.01) return "C";
+    return "D";
+};
+
+const getShortName = (text, fallback) => {
+    if (!text || text.trim() === "") return fallback;
+    const lower = text.toLowerCase();
+    
+    // Only shorten if it looks like a long question sentence (length > 30)
+    // If it's already short (like "awokaowka" or "Pendaftaran"), keep it as is.
+    if (text.length > 30) {
+        if (lower.includes("persyaratan")) return "Persyaratan";
+        if (lower.includes("prosedur") || lower.includes("kemudahan")) return "Prosedur";
+        if (lower.includes("waktu")) return "Waktu Layanan";
+        if (lower.includes("biaya") || lower.includes("tarif")) return "Biaya/Tarif";
+        if (lower.includes("produk") || lower.includes("spesifikasi")) return "Produk Layanan";
+        if (lower.includes("kompetensi") || lower.includes("kemampuan")) return "Kompetensi";
+        if (lower.includes("perilaku") || lower.includes("sikap") || lower.includes("sopan")) return "Perilaku";
+        if (lower.includes("sarana") || lower.includes("prasarana")) return "Sarana";
+        if (lower.includes("pengaduan") || lower.includes("saran") || lower.includes("media")) return "Pengaduan";
+    }
+    
+    // Truncate if still too long
+    return text.length > 40 ? text.substring(0, 37) + "..." : text;
+}
+
 export default function SKMDashboard() {
     const [selectedSurveyId, setSelectedSurveyId] = useState(null);
 
@@ -62,87 +96,181 @@ export default function SKMDashboard() {
         queryFn: async () => {
             const res = await axios.get(api.surveys.list);
             const data = res.data?.data || res.data;
+            console.log("Dashboard Survey List:", data);
             return Array.isArray(data) ? data : [];
         },
     });
 
-    // --- 2. Fetch Survey Details (Dashboard Mode) ---
-    const { data: surveyResult, isLoading: isLoadingResult } = useQuery({
+    // --- 2. Fetch Survey Results (Robust Multi-step Flow) ---
+    const { data: surveyData, isLoading: isLoadingResult } = useQuery({
         queryKey: ["surveyResult", selectedSurveyId],
         queryFn: async () => {
             if (!selectedSurveyId) return null;
-            const res = await axios.get(api.results.getBySurvey(selectedSurveyId));
-            // Matches src/app/pages/dashboards/hasil-survey/index.jsx
-            return res.data.data || res.data;
+            
+            try {
+                // 1. Fetch List of Respondents
+                const resList = await axios.get(api.results.getRespondenList(selectedSurveyId));
+                const respondentList = Array.isArray(resList.data.data) ? resList.data.data : (Array.isArray(resList.data) ? resList.data : []);
+                
+                console.log(`Found ${respondentList.length} respondents for survey ${selectedSurveyId}`);
+                if (respondentList.length === 0) return { jawaban: [], respondentCount: 0 };
+
+                // 2. Fetch All Details in Parallel
+                const detailsPromises = respondentList.map(resp => 
+                    axios.get(api.results.getDetailJawaban(resp.submissionId))
+                         .then(res => {
+                             const answers = res.data.data || res.data;
+                             return Array.isArray(answers) ? answers : [];
+                         })
+                         .catch(err => {
+                             console.error(`Failed to fetch details for ${resp.submissionId}`, err);
+                             return [];
+                         })
+                );
+                
+                const answersArrays = await Promise.all(detailsPromises);
+                const flatAnswers = answersArrays.flat();
+                
+                return {
+                    jawaban: flatAnswers,
+                    respondentCount: respondentList.length
+                };
+            } catch (err) {
+                console.error("Error in robust fetch:", err);
+                // Fallback to simpler fetch if respondents fail
+                const res = await axios.get(api.results.getBySurvey(selectedSurveyId));
+                return res.data?.data || res.data;
+            }
         },
         enabled: !!selectedSurveyId,
     });
 
-    // --- 2b. Fetch Questions for selected survey (to map fixed positions) ---
-    const { data: questions = [] } = useQuery({
+    // --- 2b. Fetch Questions ---
+    const { data: questions = [], isLoading: isLoadingQuestions } = useQuery({
         queryKey: ["surveyQuestions", selectedSurveyId],
         queryFn: async () => {
             if (!selectedSurveyId) return [];
             const res = await axios.get(api.questions.getBySurvey(selectedSurveyId));
             const data = res.data?.data || res.data;
-            return Array.isArray(data) ? data : [];
+            // Sort by urutan, then by ID to match database order stably
+            return Array.isArray(data) 
+                ? [...data].sort((a, b) => {
+                    const orderA = Number(a.urutan || a.order || 0);
+                    const orderB = Number(b.urutan || b.order || 0);
+                    if (orderA !== orderB) return orderA - orderB;
+                    return Number(a.id || a._id || 0) - Number(b.id || b._id || 0);
+                }) 
+                : [];
         },
         enabled: !!selectedSurveyId,
-        staleTime: 5 * 60 * 1000,
     });
 
-    // --- 3. Fetch UMKM Data ---
-    const { data: umkmList = [] } = useQuery({
-        queryKey: ["umkm"],
-        queryFn: async () => {
-            const res = await axios.get(api.umkm.list);
-            // Matches src/app/pages/dashboards/UMKM/index.jsx
-            return Array.isArray(res.data) ? res.data : [];
-        }
-    });
+    const { genderQ, eduQ, skmElements } = useMemo(() => {
+        // Extract fallback questions from answers to ensure all answered questions are captured
+        // This is a "database-first" discovery approach similar to HasilSurvey rekap
+        const answers = Array.isArray(surveyData?.jawaban) ? surveyData.jawaban : [];
+        const fallbackQs = [];
+        const seenFq = new Set();
+        
+        answers.forEach(ans => {
+            if (ans.pertanyaan) {
+                const q = ans.pertanyaan;
+                const id = q.id || q._id || ans.pertanyaan_id;
+                const text = (q.teks || q.text || "").trim().toLowerCase();
+                const key = id ? String(id) : `txt_${text}`;
+                
+                if (text !== "" && !seenFq.has(key)) {
+                    seenFq.add(key);
+                    fallbackQs.push({ ...q, id: id });
+                }
+            }
+        });
+
+        return mapQuestionsToIds(questions, fallbackQs);
+    }, [questions, surveyData]);
 
     // --- Calculation Logic ---
     const stats = useMemo(() => {
-        // console.log("Stats Recalc: surveyResult", surveyResult);
-        if (!surveyResult || !surveyResult.jawaban) {
-            console.log("Stats: No surveyResult or jawaban");
-            return null;
-        }
+        if (!surveyData) return null;
 
-        const answers = surveyResult.jawaban;
-        // console.log("Stats: Raw Answers", answers);
+        // surveyData could be { jawaban: [], respondentCount: X } or just []
+        const answers = Array.isArray(surveyData.jawaban) ? surveyData.jawaban : (Array.isArray(surveyData) ? surveyData : []);
+        const totalRespondents = surveyData.respondentCount ?? (surveyData.totalRespondents ?? 0);
+        
+        // If totalRespondents is missing but we have answers, we can estimate from unique submission IDs
+        const uniqueSubmissions = new Set(answers.map(a => a.submissionId || a.id)).size;
+        const finalRespondentCount = totalRespondents || uniqueSubmissions;
 
-        // 1. Group answers by Question ID
-        const questionMap = {};
+        // 1. Group answers by Question ID and Text for robust matching
+        const questionMapLocal = {};
+        const textToIdMap = {}; // Helper to match by text if ID is missing
 
         answers.forEach(ans => {
-            // Extract question id from several possible shapes in API response
-            const possibleId = ans.pertanyaan_id ?? ans.pertanyaan?.id ?? ans.pertanyaan?._id ?? ans.pertanyaan?.pertanyaan_id ?? ans.pertanyaan?.question_id ?? ans.pertanyaan?.urutan;
-            const qId = possibleId !== undefined && possibleId !== null ? String(possibleId) : String(ans.pertanyaan?.teks || 'unknown');
+            const rawId = ans.pertanyaan_id ?? ans.pertanyaan?.id;
+            const qRawText = (ans.pertanyaan?.teks || ans.pertanyaan?.text || "");
+            const qText = qRawText.trim().toLowerCase();
+            const qId = (rawId !== undefined && rawId !== null) ? String(rawId) : `text_${qText}`;
+            
+            if (rawId) textToIdMap[qText] = String(rawId);
+            
             const score = getScore(ans.jawaban);
 
-            if (!questionMap[qId]) {
-                questionMap[qId] = {
+            if (!questionMapLocal[qId]) {
+                questionMapLocal[qId] = {
                     text: ans.pertanyaan?.teks || "",
-                    answers: []
+                    answers: [],
+                    availableOptions: ans.pertanyaan?.opsi || []
                 };
             }
-            questionMap[qId].answers.push({
+            questionMapLocal[qId].answers.push({
                 val: ans.jawaban,
                 score: score
             });
         });
 
-        // console.log("Stats: Question Map", questionMap);
+        // Helper to get answers with ID and Text fallback
+        const getAnswersForQ = (q) => {
+            if (!q) return [];
+            // Try ID first
+            let data = questionMapLocal[String(q.id)];
+            // If not found, try by text (trimmed & lowercase)
+            if (!data) {
+                const qText = (q.teks || q.text || q.name || "").trim().toLowerCase();
+                const idFromText = textToIdMap[qText];
+                data = questionMapLocal[idFromText] || questionMapLocal[`text_${qText}`];
+            }
+            return data?.answers || [];
+        };
 
-        // questionIds removed: not needed now that mapping uses question list or helper
+        // 2. Generate SKM Element results from the dynamic skmElements array
+        const elementResults = skmElements.map((elem, i) => {
+            const qAnswers = getAnswersForQ(elem);
+            
+            const sumScore = qAnswers.reduce((sum, a) => sum + a.score, 0);
+            const avg = qAnswers.length > 0 ? sumScore / qAnswers.length : 0;
+            const indexValue = avg * 25;
 
-        // Use deterministic mapping helper (prefers positional mapping Q1..Q14 -> biodata/U1..U9, falls back to keyword mapping)
-        const { genderQId, eduQId, elementQIdMap } = mapQuestionsToIds(questions, questionMap);
+            // Use getShortName for visual cleanliness but default to actual question text
+            const dynamicName = getShortName(elem.text || elem.name, elem.name);
 
+            return { 
+                ...elem,
+                code: `U${i+1}`,
+                name: dynamicName,
+                color: COLORS[i % COLORS.length], // Cycle through colors
+                value: indexValue, 
+                avgScore: avg 
+            };
+        });
 
-        // --- Biodata Processing ---
-        const genderAnswers = genderQId ? (questionMap[String(genderQId)] || { answers: [] }).answers : [];
+        // 3. Overall SKM Index
+        const validElements = elementResults.filter(e => e.avgScore > 0);
+        const ikmValue = validElements.length > 0
+            ? validElements.reduce((acc, curr) => acc + curr.value, 0) / validElements.length
+            : 0;
+
+        // 4. Biodata: Gender
+        const genderAnswers = getAnswersForQ(genderQ);
         const maleCount = genderAnswers.filter(a => {
             const val = String(a.val).toLowerCase();
             return val === 'l' || val.includes('laki') || val.includes('pria');
@@ -152,330 +280,305 @@ export default function SKMDashboard() {
             return val === 'p' || val.includes('perempuan') || val.includes('wanita');
         }).length;
 
-        // Total Respondents: Max answers for any single question
-        // This is robust against surveys with < 14 quesitons or if mapping fails
-        const totalRespondents = Math.max(...Object.values(questionMap).map(q => q.answers.length), 0);
+        // 5. Biodata: Education
+        const eduAnswers = getAnswersForQ(eduQ);
+        const EDU_CATEGORIES = [
+            { key: "S2", display: "S2", keywords: ["s2", "magister"] },
+            { key: "S1", display: "D4/S1", keywords: ["s1", "d4", "sarjana"] },
+            { key: "SMA", display: "SMA", keywords: ["sma", "smk", "slta", "aliyah"] },
+            { key: "SMP", display: "SMP", keywords: ["smp", "sltp", "tsanawiyah"] },
+            { key: "SD", display: "SD", keywords: ["sd", "mi", "dasar"] }
+        ];
 
-        // Education Stats
-        const eduAnswers = eduQId ? (questionMap[String(eduQId)] || { answers: [] }).answers : [];
         const eduStats = {
-            S2: eduAnswers.filter(a => String(a.val).includes('S2')).length,
-            S1: eduAnswers.filter(a => String(a.val).includes('S1') || String(a.val).includes('D4')).length,
-            SMA: eduAnswers.filter(a => String(a.val).includes('SMA') || String(a.val).includes('SLTA')).length,
-            SMP: eduAnswers.filter(a => String(a.val).includes('SMP') || String(a.val).includes('SLTP')).length,
-            SD: eduAnswers.filter(a => String(a.val).includes('SD')).length,
-            Total: eduAnswers.length || 1
+            Total: eduAnswers.length || 1,
+            distributions: EDU_CATEGORIES.map(cat => ({
+                label: cat.display,
+                count: eduAnswers.filter(a => {
+                    const v = String(a.val).toLowerCase();
+                    return cat.keywords.some(k => v.includes(k));
+                }).length,
+                color: cat.key === "S2" ? "bg-blue-800" : 
+                       cat.key === "S1" ? "bg-green-600" :
+                       cat.key === "SMA" ? "bg-yellow-500" :
+                       cat.key === "SMP" ? "bg-pink-600" : "bg-purple-600"
+            }))
         };
-
-        // --- Service Elements ---
-        const elementStats = ELEMENTS.map((elem, index) => {
-            const qKey = elementQIdMap[index];
-            const qData = qKey ? (questionMap[String(qKey)] || { answers: [] }) : { answers: [] };
-            const scores = qData.answers.map(a => a.score);
-
-            const totalScore = scores.reduce((a, b) => a + b, 0);
-            const count = scores.length || 1;
-            const avg = totalScore / count;
-
-            // Index: Avg * 25
-            const indexValue = avg * 25;
-
-            return {
-                ...elem,
-                value: indexValue,
-                avgScore: avg
-            };
-        });
-
-        const validElements = elementStats.filter(e => e.avgScore > 0);
-        const ikm = validElements.length > 0
-            ? validElements.reduce((acc, curr) => acc + curr.value, 0) / validElements.length
-            : 0;
 
         return {
-            totalRespondents: Math.floor(totalRespondents),
+            totalRespondents: Math.floor(finalRespondentCount),
             gender: { male: maleCount, female: femaleCount },
             education: eduStats,
-            ikm: ikm,
-            elements: elementStats
+            ikm: ikmValue,
+            ikmGrade: getGrade(ikmValue),
+            elements: elementResults
         };
+    }, [surveyData, skmElements, genderQ, eduQ]);
 
-    }, [surveyResult, questions]);
+    // --- UMKM Stats (Dynamic) ---
+    const { data: umkmList = [] } = useQuery({
+        queryKey: ["umkm"],
+        queryFn: async () => {
+            const res = await axios.get(api.umkm.list);
+            return Array.isArray(res.data) ? res.data : [];
+        }
+    });
 
-
-    // --- UMKM Stats Logic ---
     const umkmStats = useMemo(() => {
         const total = umkmList.length;
         const jangkauanCounts = {};
-
         umkmList.forEach(u => {
             const range = u.jangkauanPemasaran || "Lokal";
             jangkauanCounts[range] = (jangkauanCounts[range] || 0) + 1;
         });
-
-        const series = Object.values(jangkauanCounts);
-        const labels = Object.keys(jangkauanCounts);
-
         return {
             total,
-            chart: { series, labels }
+            chart: { series: Object.values(jangkauanCounts), labels: Object.keys(jangkauanCounts) }
         };
     }, [umkmList]);
 
-    // --- Auto-Select First Survey ---
+    // --- Auto-Select ---
     useEffect(() => {
         if (surveyList.length > 0 && !selectedSurveyId) {
-            const firstSurvey = surveyList[0];
-            setSelectedSurveyId(firstSurvey.id);
+            setSelectedSurveyId(surveyList[0].id);
         }
     }, [surveyList, selectedSurveyId]);
 
-    // --- Chart Configs ---
-    // SKM Chart
-    const chartOptions = {
-        chart: { type: "polarArea", toolbar: { show: false }, background: 'transparent', foreColor: '#ffffff' },
-        labels: ELEMENTS.map(e => `${e.code} ${e.name}`),
-        stroke: { colors: ["#fff"], width: 1 },
-        fill: { opacity: 0.9 },
-        colors: ELEMENTS.map(e => e.color),
-        legend: { show: false },
-        yaxis: { show: false },
-        plotOptions: { polarArea: { rings: { strokeWidth: 0 }, spokes: { strokeWidth: 0 } } },
-        tooltip: { y: { formatter: (val) => val.toFixed(2) + "%" }, theme: 'dark' }
-    };
-    const chartSeries = stats ? stats.elements.map(e => Number.parseFloat(e.value.toFixed(2))) : [];
+    // --- Charts configs ---
+    const chartOptions = useMemo(() => ({
+        chart: {
+            type: 'polarArea',
+            toolbar: { show: false },
+            background: 'transparent',
+            foreColor: '#ffffff'
+        },
+        colors: stats?.elements?.map(e => e.color) || COLORS,
+        labels: stats?.elements?.map(e => `${e.code} ${e.name}`) || [],
+        fill: {
+            opacity: 1.0
+        },
+        stroke: {
+            width: 2,
+            colors: ['#00809D'] // Match background for a "cutout" look or use white
+        },
+        plotOptions: {
+            polarArea: {
+                rings: {
+                    strokeWidth: 1,
+                    strokeColor: 'rgba(255,255,255,0.1)'
+                },
+                spokes: {
+                    strokeWidth: 1,
+                    connectorColor: 'rgba(255,255,255,0.1)'
+                }
+            }
+        },
+        yaxis: {
+            show: false
+        },
+        legend: {
+            position: 'bottom',
+            labels: {
+                colors: stats?.elements?.map(() => '#ffffff') || '#ffffff',
+                useSeriesColors: false
+            }
+        },
+        theme: {
+            monochrome: {
+                enabled: false,
+            }
+        },
+    }), [stats]);
 
-    // UMKM Chart
+    const chartSeries = useMemo(() => stats?.elements?.map(e => e.value) || [], [stats]);
+
     const umkmChartOptions = {
-        chart: { type: "pie", toolbar: { show: false }, background: 'transparent' }, // Pie for composition
+        chart: { type: "pie", toolbar: { show: false }, background: 'transparent' },
         labels: umkmStats.chart.labels,
-        colors: ["#3b82f6", "#10b981", "#f59e0b", "#ef4444", "#8b5cf6"], // Blue, Green, Yellow, Red, Purple
+        colors: ["#3b82f6", "#10b981", "#f59e0b", "#ef4444", "#8b5cf6"],
         legend: { position: 'bottom' },
         dataLabels: { enabled: true },
         tooltip: { theme: 'light' }
     };
 
-
-    // --- Render Loading ---
-    if (isLoadingList || (surveyList.length > 0 && !selectedSurveyId)) {
-        return <div className="min-h-screen flex items-center justify-center bg-white text-teal-600 font-bold">Memuat Dashboard...</div>;
-    }
-
-    // --- Render Selection List (Fallback if no surveys) ---
-    if (!selectedSurveyId && surveyList.length === 0) {
-        return (
-            <div className="p-6 min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
-                <div className="text-center text-gray-500">Belum ada data survey untuk ditampilkan.</div>
-            </div>
-        )
-    }
-
-    // --- Render Dashboard ---
-    if (isLoadingResult) {
-        return <div className="min-h-screen flex items-center justify-center bg-teal-600 text-white">Memuat Data Visualisasi...</div>
-    }
-
-    // Debug info removed from production view
+    const mainLoading = isLoadingList || isLoadingResult || isLoadingQuestions;
 
     return (
-        <div className="min-h-screen w-full bg-gray-50 dark:bg-dark-900 p-4 font-sans text-gray-900 lg:p-8 dark:text-gray-100 transition-colors duration-300">
-
-            {/* Header Info */}
-            <div className="mb-8 text-center relative z-10 pt-4 lg:pt-0">
-                <h1 className="text-3xl font-bold uppercase tracking-wider text-teal-700 dark:text-teal-400 drop-shadow-sm">
-                    Kuisioner Kepuasan Masyarakat (SKM)
-                </h1>
-                <h2 className="text-xl font-medium mt-1 text-gray-700 dark:text-gray-300">
-                    Kalurahan Imogiri, Kabupaten Bantul
-                </h2>
-            </div>
-
-            {/* --- SKM SECTION --- */}
-            <div className="grid grid-cols-1 gap-8 lg:grid-cols-12 max-w-7xl mx-auto relative z-10 mb-12">
-
-                {/* Main Chart Area */}
-                <div className="lg:col-span-8 relative flex flex-col items-center justify-center min-h-[500px]">
-                    {/* Central IKM Circle Overlay - Kept Green as requested */}
-                    <div className="w-full max-w-2xl bg-[#00809D] rounded-3xl p-6 shadow-xl border borderbg-[#FF7601] relative">
-                        {/* Central IKM Circle Overlay - centered over the chart container */}
-                        <div className="absolute z-10 pointer-events-none" style={{ top: '50%', left: '50%', transform: 'translate(-50%, -50%)' }}>
-                            <div className="flex flex-col items-center justify-center rounded-full bg-teal-600 p-8 shadow-2xl w-48 h-48 border-4 border-white transform hover:scale-105 transition-transform duration-500">
-                                <h4 className="text-lg font-bold text-white uppercase text-center leading-tight drop-shadow-md">
-                                    Indeks <br /> Kepuasan
-                                </h4>
-                                <span className="text-4xl font-extrabold text-white mt-1 drop-shadow-md">
-                                    {stats?.ikm?.toFixed(2) || "0.00"}
-                                </span>
-                            </div>
-                        </div>
-                        {isLoadingResult ? (
-                            <div className="h-[550px] flex items-center justify-center text-white">Memuat Visualisasi...</div>
-                        ) : (
-                            <ReactApexChart
-                                options={chartOptions}
-                                series={chartSeries}
-                                type="polarArea"
-                                height={550}
-                            />
-                        )}
+        <div className="min-h-screen bg-gray-50 dark:bg-dark-900 pb-20">
+            {/* Force legend text to white for ApexCharts */}
+            <style dangerouslySetInnerHTML={{ __html: `
+                .apexcharts-legend-text {
+                    color: #ffffff !important;
+                    fill: #ffffff !important;
+                }
+                .apexcharts-canvas text {
+                    fill: #ffffff !important;
+                }
+                .apexcharts-datalabel, .apexcharts-datalabel-label, .apexcharts-datalabel-value {
+                    fill: #ffffff !important;
+                }
+                /* Custom Dropdown Styling */
+                select option {
+                    color: #000000 !important;
+                    background-color: #ffffff !important;
+                }
+                select option:hover, select option:focus {
+                    background-color: #10b981 !important;
+                    color: #ffffff !important;
+                }
+            `}} />
+            
+            {/* Header / Filter */}
+            <div className="bg-white dark:bg-dark-800 shadow-sm border-b border-gray-200 dark:border-dark-700 sticky top-0 z-50">
+                <div className="max-w-7xl mx-auto px-4 py-4 flex flex-col md:flex-row md:items-center justify-between gap-4">
+                    <div>
+                        <h1 className="text-2xl font-bold text-black dark:text-white uppercase">Dashboard Survey & UMKM</h1>
+                        <p className="text-xs text-black dark:text-white font-medium">Kalurahan Imogiri, Kabupaten Bantul</p>
                     </div>
 
-                    {/* debug mapping removed */}
+                    <div className="flex items-center gap-2 bg-gray-50 dark:bg-dark-700 p-1 rounded-xl border border-gray-200 dark:border-dark-600">
+                        <span className="text-[10px] font-bold text-gray-400 uppercase px-2 font-mono">Pilih Survey:</span>
+                        <select 
+                            className="bg-transparent border-none text-sm font-bold text-black hover:text-green-600 dark:text-gray-200 dark:hover:text-green-400 focus:ring-0 cursor-pointer min-w-[200px] transition-colors duration-200"
+                            value={selectedSurveyId || ""}
+                            onChange={(e) => setSelectedSurveyId(e.target.value)}
+                        >
+                            <option value="" className="text-black">-- Pilih Survey --</option>
+                            {surveyList.map(s => (
+                                <option key={s.id} value={s.id} className="text-black">{s.namaSurvey || s.judul || s.title || `Survey #${s.id}`}</option>
+                            ))}
+                        </select>
+                    </div>
+                </div>
+            </div>
 
-                    {/* Pendidikan Responden - moved below chart for better height fit */}
-                    <div className="w-full max-w-2xl mt-6 bg-white dark:bg-dark-800 rounded-2xl p-6 shadow-lg border border-gray-100 dark:border-dark-700">
-                        <h3 className="bg-gradient-to-r from-teal-700 to-teal-600 text-white font-bold py-2 px-4 rounded-lg text-center uppercase mb-4 text-sm tracking-wide shadow-md">
-                            Pendidikan Responden
-                        </h3>
-                        {stats ? (
+            {!selectedSurveyId ? (
+                <div className="flex flex-col items-center justify-center h-[60vh] max-w-7xl mx-auto">
+                    <div className="w-20 h-20 bg-teal-100 dark:bg-teal-900/30 rounded-full flex items-center justify-center mb-4">
+                        <UserGroupIcon className="w-10 h-10 text-teal-600" />
+                    </div>
+                    <h2 className="text-xl font-bold text-gray-700 dark:text-gray-300">Selamat Datang di SKM Dashboard</h2>
+                    <p className="text-gray-500 text-sm mt-2 text-center max-w-md">Silakan pilih salah satu kuesioner survey di atas untuk melihat visualisasi data kepuasan masyarakat.</p>
+                </div>
+            ) : mainLoading ? (
+                <div className="flex items-center justify-center h-96">
+                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-teal-600"></div>
+                </div>
+            ) : !stats || stats.totalRespondents === 0 ? (
+                <div className="flex flex-col items-center justify-center h-96 bg-white dark:bg-dark-800 rounded-2xl shadow-sm border border-dashed border-gray-300 dark:border-dark-700 max-w-7xl mx-auto mt-8 p-6">
+                   <p className="text-gray-500 mb-2">Belum ada data responden untuk survey ini.</p>
+                   <p className="text-xs text-gray-400">Silakan isi kuisioner terlebih dahulu atau pilih survey lain.</p>
+                </div>
+            ) : (
+                <div className="grid grid-cols-1 gap-8 lg:grid-cols-12 max-w-7xl mx-auto relative z-10 mb-12 mt-8">
+                    <div className="lg:col-span-8 relative flex flex-col items-center justify-center min-h-[500px]">
+                        <div className="w-full max-w-2xl bg-[#00809D] rounded-3xl p-6 shadow-xl relative overflow-hidden">
+                            <div className="absolute z-10 pointer-events-none" style={{ top: '50%', left: '50%', transform: 'translate(-50%, -50%)' }}>
+                                <div className="flex flex-col items-center justify-center rounded-full bg-teal-600 p-8 shadow-2xl w-48 h-48 border-4 border-white transform hover:scale-105 transition-transform duration-500">
+                                    <h4 className="text-lg font-bold text-white uppercase text-center leading-tight">Indeks</h4>
+                                    <span className="text-4xl font-extrabold text-white">{stats.ikm.toFixed(2)}</span>
+                                </div>
+                            </div>
+                            <ReactApexChart options={chartOptions} series={chartSeries} type="polarArea" height={550} />
+                        </div>
+
+                        <div className="w-full max-w-2xl mt-6 bg-white dark:bg-dark-800 rounded-2xl p-6 shadow-lg border border-gray-100 dark:border-dark-700">
+                            <h3 className="bg-teal-600 text-white font-bold py-2 px-4 rounded-lg text-center uppercase mb-4 text-sm shadow-md">Pendidikan Responden</h3>
                             <div className="space-y-3">
-                                <EduBar label="S2" count={stats.education.S2} total={stats.education.Total} color="bg-blue-800" />
-                                <EduBar label="D4/S1" count={stats.education.S1} total={stats.education.Total} color="bg-green-600" />
-                                <EduBar label="SMA" count={stats.education.SMA} total={stats.education.Total} color="bg-yellow-500" />
-                                <EduBar label="SMP" count={stats.education.SMP} total={stats.education.Total} color="bg-pink-600" />
-                                <EduBar label="SD" count={stats.education.SD} total={stats.education.Total} color="bg-purple-600" />
-                            </div>
-                        ) : (
-                            <div className="text-center opacity-50 py-4">Memuat data...</div>
-                        )}
-                    </div>
-                </div>
-
-                {/* Sidebar / Legend Area */}
-                <div className="lg:col-span-4 space-y-6">
-
-                    {/* Mutu Pelayanan (header + per-element details) */}
-                    <div className="bg-white dark:bg-dark-800 rounded-2xl p-6 shadow-lg border border-gray-100 dark:border-dark-700">
-                        <h3 className="bg-gradient-to-r from-teal-700 to-teal-600 text-white font-bold py-2 px-4 rounded-lg text-center uppercase mb-4 text-sm tracking-wide shadow-md">
-                            Mutu Pelayanan
-                        </h3>
-
-                        {/* Rincian Mutu per Unsur */}
-                        {stats ? (
-                            <div className="mt-2">
-                                <h4 className="text-sm font-semibold mb-3">Rincian Mutu per Unsur</h4>
-                                <div className="grid grid-cols-1 gap-2">
-                                    {stats.elements.map(el => {
-                                        const getGrade = (v) => {
-                                            if (v >= 88.31) return 'A';
-                                            if (v >= 76.61) return 'B';
-                                            if (v >= 65.0) return 'C';
-                                            return 'D';
-                                        };
-                                        const grade = getGrade(el.value);
-                                        return (
-                                            <div key={el.code} className="flex items-center justify-between bg-gray-50 dark:bg-dark-700 rounded-lg p-3">
-                                                <div className="flex items-center gap-3">
-                                                    <div className="w-10 h-10 rounded-full flex items-center justify-center text-white font-bold" style={{ background: el.color }}>
-                                                        {el.code}
-                                                    </div>
-                                                    <div>
-                                                        <div className="text-sm font-medium">{el.name}</div>
-                                                        <div className="text-xs text-gray-500">Skor: {el.avgScore.toFixed(2)} ({el.value.toFixed(2)})</div>
-                                                    </div>
-                                                </div>
-                                                <div className="text-lg font-bold text-teal-700">{Number(el.value).toFixed(0)}%</div>
-                                                <div className="ml-4 text-sm font-semibold">{grade}</div>
-                                            </div>
-                                        );
-                                    })}
-                                </div>
-                            </div>
-                        ) : (
-                            <div className="text-center opacity-50 py-4">Memuat data...</div>
-                        )}
-                    </div>
-
-                    
-
-                    {/* Respondent Gender Stats - Real Data */}
-                    <div className="bg-teal-50 dark:bg-dark-800 rounded-2xl p-4 shadow-lg border border-teal-100 dark:border-dark-700 text-gray-800 dark:text-gray-100">
-                        <h3 className="font-bold text-sm uppercase mb-3 border-b border-gray-200 dark:border-gray-700 pb-2 flex items-center gap-2 text-teal-700 dark:text-teal-400">
-                            <UserGroupIcon className="w-4 h-4" /> Demografi Gender
-                        </h3>
-                        <div className="space-y-2">
-                            <div className="flex items-center justify-between bg-white dark:bg-dark-700 rounded-lg p-3 shadow-sm">
-                                <div className="flex items-center gap-2">
-                                    <div className="w-2 h-2 rounded-full bg-blue-500"></div>
-                                    <span>Laki - laki</span>
-                                </div>
-                                <span className="font-bold">{stats?.gender?.male || 0} <span className="text-xs font-normal opacity-70">Org</span></span>
-                            </div>
-                            <div className="flex items-center justify-between bg-white dark:bg-dark-700 rounded-lg p-3 shadow-sm">
-                                <div className="flex items-center gap-2">
-                                    <div className="w-2 h-2 rounded-full bg-pink-500"></div>
-                                    <span>Perempuan</span>
-                                </div>
-                                <span className="font-bold">{stats?.gender?.female || 0} <span className="text-xs font-normal opacity-70">Org</span></span>
-                            </div>
-                            <div className="flex items-center justify-between pt-2 border-t border-gray-200 dark:border-gray-700 mt-2">
-                                <span className="text-xs font-bold uppercase opacity-70">Total Responden</span>
-                                <span className="font-bold text-lg text-teal-600 dark:text-teal-400">{stats?.totalRespondents || 0}</span>
+                                {stats.education.distributions.map((item, idx) => (
+                                    <EduBar key={idx} label={item.label} count={item.count} total={stats.education.Total} color={item.color} />
+                                ))}
                             </div>
                         </div>
                     </div>
 
+                    <div className="lg:col-span-4 space-y-6">
+                        <div className="bg-white dark:bg-dark-800 rounded-2xl p-6 shadow-lg border border-gray-100 dark:border-dark-700">
+                            <h3 className="bg-teal-600 text-white font-bold py-2 px-4 rounded-lg text-center uppercase mb-4 text-sm shadow-md">Mutu Pelayanan</h3>
+                            <div className="grid grid-cols-1 gap-2">
+                                {stats.elements.map(el => {
+                                    const grade = el.value >= 88.31 ? 'A' : el.value >= 76.61 ? 'B' : el.value >= 65.0 ? 'C' : 'D';
+                                    return (
+                                        <div key={el.code} className="flex items-center justify-between bg-gray-50 dark:bg-dark-700 rounded-lg p-3">
+                                            <div className="flex items-center gap-3">
+                                                <div className="w-10 h-10 rounded-full flex items-center justify-center text-white font-bold text-xs" style={{ background: el.color }}>{el.code}</div>
+                                                <div className="text-xs font-semibold">{el.name}</div>
+                                            </div>
+                                            <div className="flex items-center gap-3">
+                                                <span className="text-sm font-bold text-teal-700">{Math.round(el.value)}%</span>
+                                                <span className="text-[10px] bg-white dark:bg-dark-600 px-2 py-1 rounded border border-gray-100 dark:border-dark-500 font-bold">{grade}</span>
+                                            </div>
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                        </div>
+
+                        <div className="bg-teal-50 dark:bg-dark-800 rounded-2xl p-5 shadow-lg border border-teal-100 dark:border-dark-700">
+                            <h3 className="font-bold text-xs uppercase mb-4 flex items-center gap-2 text-teal-700 dark:text-teal-400">
+                                <UserGroupIcon className="w-4 h-4" /> Demografi Gender
+                            </h3>
+                            <div className="space-y-2">
+                                <GenderItem label="Laki - laki" count={stats.gender.male} color="bg-blue-500" />
+                                <GenderItem label="Perempuan" count={stats.gender.female} color="bg-pink-500" />
+                                <div className="flex items-center justify-between pt-3 border-t border-teal-100 dark:border-dark-600 mt-2">
+                                    <span className="text-[10px] font-bold uppercase text-gray-400">Total Responden</span>
+                                    <span className="font-bold text-lg text-teal-600">{stats.totalRespondents}</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
-            </div>
+            )}
 
             {/* --- UMKM SECTION --- */}
             <div className="max-w-7xl mx-auto border-t border-gray-200 dark:border-gray-700 pt-10">
                 <div className="text-center mb-8">
                     <h2 className="text-2xl font-bold uppercase text-teal-700 dark:text-teal-400">Statistik UMKM</h2>
-                    <p className="text-gray-500">Data sebaran dan jangkauan UMKM di Kalurahan Imogiri</p>
                 </div>
-
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-center">
-                    {/* UMKM Stats Card */}
                     <div className="bg-white dark:bg-dark-800 rounded-3xl p-8 shadow-xl border border-gray-100 dark:border-dark-700 flex flex-col justify-center items-center text-center h-full">
-                        <div className="mb-6">
-                            <div className="w-20 h-20 bg-blue-100 dark:bg-blue-900 rounded-full flex items-center justify-center mx-auto mb-4">
-                                <span className="text-4xl text-blue-600 dark:text-blue-300">🏪</span>
-                            </div>
-                            <h3 className="text-4xl font-extrabold text-blue-900 dark:text-blue-200">{umkmStats.total}</h3>
-                            <p className="text-lg font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide mt-2">Total UMKM Terdaftar</p>
+                        <div className="w-20 h-20 bg-blue-100 dark:bg-blue-900 rounded-full flex items-center justify-center mb-4">
+                            <span className="text-4xl text-blue-600">🏪</span>
                         </div>
-                        <div className="w-full grid grid-cols-2 gap-4 mt-4">
+                        <h3 className="text-4xl font-extrabold text-blue-900 dark:text-blue-200">{umkmStats.total}</h3>
+                        <p className="text-sm font-medium text-gray-500 uppercase mt-1">UMKM Terdaftar</p>
+                        <div className="w-full grid grid-cols-2 gap-3 mt-6">
                             {umkmStats.chart.labels.map((label, idx) => (
-                                <div key={idx} className="bg-gray-50 dark:bg-dark-700 p-3 rounded-lg">
-                                    <span className="block text-xl font-bold text-gray-800 dark:text-gray-100">{umkmStats.chart.series[idx]}</span>
-                                    <span className="text-xs text-gray-500 uppercase">{label}</span>
+                                <div key={idx} className="bg-gray-50 dark:bg-dark-700 p-2 rounded-lg">
+                                    <span className="block text-lg font-bold">{umkmStats.chart.series[idx]}</span>
+                                    <span className="text-[10px] text-gray-500 uppercase">{label}</span>
                                 </div>
                             ))}
                         </div>
                     </div>
-
-                    {/* UMKM Chart Card */}
-                    <div className="bg-white dark:bg-dark-800 rounded-3xl p-8 shadow-xl border border-gray-100 dark:border-dark-700 h-full">
-                        <h3 className="font-bold text-center mb-6 text-gray-700 dark:text-gray-300">Jangkauan Pemasaran</h3>
-                        <ReactApexChart
-                            options={umkmChartOptions}
-                            series={umkmStats.chart.series}
-                            type="pie"
-                            height={350}
-                        />
+                    <div className="bg-white dark:bg-dark-800 rounded-3xl p-8 shadow-xl border border-gray-100 dark:border-dark-700 h-full flex flex-col items-center">
+                        <h3 className="font-bold mb-4 text-gray-700 text-sm">Jangkauan Pemasaran</h3>
+                        <ReactApexChart options={umkmChartOptions} series={umkmStats.chart.series} type="pie" width={400} />
                     </div>
                 </div>
-
             </div>
         </div>
     );
 }
 
 // Sub-components
-
 const EduBar = ({ label, count, total, color }) => (
-    <div className="flex items-center gap-2 group">
-        <div className={`w-14 py-1 ${color} text-white text-center text-[10px] font-bold rounded shadow-sm group-hover:scale-105 transition-transform`}>
-            {label}
-        </div>
-        <div className="flex-1 bg-gray-100 dark:bg-dark-700 h-5 rounded overflow-hidden relative shadow-inner">
-            {/* Bar */}
-            <div className={`h-full ${color} opacity-80 transition-all duration-1000`} style={{ width: `${(count / total) * 100}%` }}></div>
-            {/* Text Overlay */}
-            <div className="absolute inset-0 flex items-center justify-between px-2">
-                <span className="text-[10px] font-bold text-gray-700 dark:text-gray-300 z-10">{count}</span>
-            </div>
+    <div className="flex items-center gap-3">
+        <div className={`w-14 py-1 ${color} text-white text-center text-[10px] font-bold rounded shadow-sm`}>{label}</div>
+        <div className="flex-1 bg-gray-100 dark:bg-dark-700 h-6 rounded-full overflow-hidden relative shadow-inner">
+            <div className={`h-full ${color} opacity-80`} style={{ width: `${total > 0 ? (count / total) * 100 : 0}%` }}></div>
+            <span className="absolute right-3 top-1 text-[10px] font-bold text-gray-600 dark:text-gray-300">{count}</span>
         </div>
     </div>
-)
+);
+
+const GenderItem = ({ label, count, color }) => (
+    <div className="flex items-center justify-between bg-white dark:bg-dark-700 rounded-xl p-3 shadow-sm border border-teal-50 dark:border-dark-600">
+        <div className="flex items-center gap-2">
+            <div className={`w-2 h-2 rounded-full ${color}`}></div>
+            <span className="text-sm font-medium">{label}</span>
+        </div>
+        <span className="font-bold text-sm">{count} <span className="text-[10px] font-normal opacity-50">Org</span></span>
+    </div>
+);
