@@ -39,11 +39,4 @@ RoleGuard.propTypes = {
   allowedRoles: PropTypes.arrayOf(PropTypes.string),
 };
 
-/**
- * Factory function to create RoleGuard with specific allowed roles
- */
-export const createRoleGuard = (allowedRoles) => {
-  return function RoleGuardWrapper() {
-    return <RoleGuard allowedRoles={allowedRoles} />;
-  };
-};
+// createRoleGuard moved to RoleGuardUtils.jsx to satisfy Fast Refresh rules

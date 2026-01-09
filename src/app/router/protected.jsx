@@ -5,7 +5,7 @@ import { Navigate } from "react-router";
 import { AppLayout } from "app/layouts/AppLayout";
 import { DynamicLayout } from "app/layouts/DynamicLayout";
 import AuthGuard from "middleware/AuthGuard";
-import { createRoleGuard } from "middleware/RoleGuard";
+import { createRoleGuard } from "middleware/RoleGuardUtils";
 
 // ----------------------------------------------------------------------
 

@@ -54,7 +54,7 @@ export function Menu({ nav, setActiveSegment, activeSegment }) {
   );
 }
 
-MenuJ.propTypes = {
+Menu.propTypes = {
   nav: PropTypes.array,
   activeSegment: PropTypes.string,
   setActiveSegment: PropTypes.func,
