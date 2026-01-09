@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import Swal from "sweetalert2";
 import ReactDOM from "react-dom/client";
 import {
@@ -210,7 +210,7 @@ export default function UsersPage() {
     // -----------------------------------------------------------
     // LOAD USERS
     // -----------------------------------------------------------
-    const loadUsers = async () => {
+    const loadUsers = useCallback(async () => {
         try {
             const res = await axios.get(api.users.list);
 
@@ -231,11 +231,11 @@ export default function UsersPage() {
             console.error(err);
             Swal.fire("Error", "Gagal mengambil data user", "error");
         }
-    };
+    }, [currentUserRole]);
 
     useEffect(() => {
         loadUsers();
-    }, []);
+    }, [loadUsers]);
 
     // -----------------------------------------------------------
     // CRUD

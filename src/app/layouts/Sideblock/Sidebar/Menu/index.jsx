@@ -1,4 +1,4 @@
-import React, { useContext, useMemo, useRef, useState } from "react";
+import { useContext, useMemo, useRef, useState } from "react";
 import { useLocation } from "react-router";
 import SimpleBar from "simplebar-react";
 import { Accordion } from "components/ui";
@@ -30,7 +30,7 @@ export function Menu() {
     if (nav.id === "dashboards" && Array.isArray(nav.childs)) {
       return {
         ...nav,
-        childs: nav.childs.filter((item) => {
+        childs: nav.childs.filter(() => {
           // console.log("📌 Checking user.is_admin inside filter:", user.is_admin);
           return !!user.is_admin;
         }),
